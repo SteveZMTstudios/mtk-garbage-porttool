@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from tkinter import Tk
-from .porttool import (
+from .ui import (
     MyUI
 )
 
