@@ -5,7 +5,7 @@ from tkinter import (
     StringVar,
     Canvas,
 )
-from .__init__ import *
+from .configs import *
 
 class LogLabel(scrolledtext.ScrolledText):
     def __init__(self, parent):
