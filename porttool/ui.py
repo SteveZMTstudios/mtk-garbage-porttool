@@ -3,6 +3,7 @@ from tkinter import (
     Toplevel,
     scrolledtext,
     StringVar,
+    BooleanVar,
     Canvas,
 )
 from tkinter.filedialog import askopenfilename
@@ -56,7 +57,7 @@ class FileChooser(Toplevel):
         """
         return boot.img, system.img, portzip.zip path
         """
-        self.wait_window()
+        self.wait_window(self)
         return [
             self.baseboot.get(),
             self.basesys.get(),
@@ -86,6 +87,8 @@ class MyUI(ttk.Labelframe):
         self.chipset_select = StringVar(value='mt65')
         self.pack_type = StringVar(value='zip')
         self.log = LogLabel(self)
+        self.item = []
+        self.itembox = [] # save Checkbutton
         self.__setup_widgets()
     
     def __start_port(self):
@@ -94,6 +97,7 @@ class MyUI(ttk.Labelframe):
             if not Path(i).exists():
                 self.log.print(f"File {i} does not exist!")
                 return
+        print(files, file=self.log)
 
     def __setup_widgets(self):
         def __scroll_event(event):
@@ -101,6 +105,28 @@ class MyUI(ttk.Labelframe):
             actcanvas.yview_scroll(number, 'units')
         def __scroll_func(event):
             actcanvas.configure(scrollregion=actcanvas.bbox("all"), width=300, height=180)
+        
+        def __create_cv_frame():
+            self.actcvframe = ttk.Frame(actcanvas)
+            actcanvas.create_window(0, 0, window=self.actcvframe, anchor='nw')
+
+        def __load_port_item():
+        
+            select = self.chipset_select.get()
+            item = support_chipset_portstep[select]['flags']
+            # Destory last items
+            self.item = []
+            self.itembox = []
+            if self.actcvframe:
+                self.actcvframe.destroy()
+            __create_cv_frame()
+            
+            for index, current in enumerate(item):
+                self.item.append([current, BooleanVar(value=item[current])]) # flagname, flag[True, False]
+                self.itembox.append(ttk.Checkbutton(self.actcvframe, text=current, variable=self.item[index][1]))
+        
+            for i in self.itembox:
+                i.pack(side='top', fill='x', padx=5)
         # label of support devices
         optlabel = ttk.Label(self)
 
@@ -126,16 +152,14 @@ class MyUI(ttk.Labelframe):
         actscroll.pack(side='right', fill='y')
         actcanvas.pack(side='right', fill='x', expand='yes', anchor='e')
         actframe.pack(side='top', fill='x', expand='yes')
-        actcvframe = ttk.Frame(actcanvas)
-        actcanvas.create_window(0, 0, window=actcvframe, anchor='nw')
-        actcvframe.bind("<Configure>", __scroll_func)
-
-        for i in range(10):
-            ttk.Checkbutton(actcvframe, text='TEST %d' %i).pack(side='top', fill='x')
+        __create_cv_frame()
+        #self.actcvframe.bind("<Configure>", __scroll_func)
 
         # label of buttons
         buttonlabel = ttk.Label(self)
+        buttonload = ttk.Button(self, text="加载移植条目", command=__load_port_item)
         buttonport = ttk.Button(self, text="一键移植", command=self.__start_port)
+        buttonload.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
         buttonport.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img')
@@ -146,5 +170,4 @@ class MyUI(ttk.Labelframe):
 
         # log label
         self.log.pack(side='top', padx=5, pady=5, fill='both', expand='yes')
-        for i in "TEST MESSAGE1", "TEST MESSAGE2", "TEST MESSAGE3":
-            print(i, file=self.log, flush=True)
+        #__load_port_item()
