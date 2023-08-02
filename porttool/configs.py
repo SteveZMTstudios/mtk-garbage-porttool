@@ -27,7 +27,8 @@ support_chipset_portstep = {
         'kernel_only': True,
     }
 }
-support_chipset = support_chipset_portstep.keys()
+support_chipset = list(support_chipset_portstep.keys())
+print(support_chipset)
 support_packtype = [
     'zip', 'img'
 ]

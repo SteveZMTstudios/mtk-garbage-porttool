@@ -1,11 +1,67 @@
 from tkinter import (
-    ttk,  
-    Tk,
+    ttk,
+    Toplevel,
     scrolledtext,
     StringVar,
     Canvas,
 )
+from tkinter.filedialog import askopenfilename
+from os import getcwd
+from pathlib import Path
 from .configs import *
+
+class FileChooser(Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("请选择要一直的底包的boot, system和要移植的zip卡刷包")
+        
+        self.portzip = StringVar()
+        self.basesys = StringVar()
+        self.baseboot = StringVar()
+        self.frame = []
+        self.__setup_widgets()
+        self.focus()
+    
+    def __setup_widgets(self):
+        def __match(val) -> str:
+            match val:
+                case 0: return "移植包路径"
+                case 1: return "此设备boot镜像"
+                case 2: return "此设备system镜像"
+                case _: return ""
+        def __choose_file(val: StringVar):
+            val.set(askopenfilename(initialdir=getcwd()))
+        
+        for index, current in enumerate([self.portzip, self.baseboot, self.basesys]):
+            frame = ttk.Frame(self)
+            label = ttk.Label(frame, text=__match(index), width=16)
+            entry = ttk.Entry(frame, textvariable=current, width=40)
+            button = ttk.Button(frame, text="选择文件", command=lambda: __choose_file(current))
+            self.frame.append([frame, label, entry, button])
+        for i in self.frame:
+            for index, widget in enumerate(i):
+                if index == 0: # frame
+                    widget.pack(side='top', fill='x', padx=5, pady=5)
+                    continue
+                if index == 2: # entry
+                    widget.pack(side='left', fill='x', padx=5, pady=5)
+                    continue
+                widget.pack(side='left', padx=5, pady=5)
+        bottomframe = ttk.Frame(self)
+        bottombutton = ttk.Button(bottomframe, text='确定', command=self.destroy)
+        bottombutton.pack(side='right', padx=5, pady=5)
+        bottomframe.pack(side='bottom', fill='x', padx=5, pady=5)
+    
+    def get(self) -> list:
+        """
+        return boot.img, system.img, portzip.zip path
+        """
+        self.wait_window()
+        return [
+            self.baseboot.get(),
+            self.basesys.get(),
+            self.portzip.get(),
+            ]
 
 class LogLabel(scrolledtext.ScrolledText):
     def __init__(self, parent):
@@ -32,6 +88,13 @@ class MyUI(ttk.Labelframe):
         self.log = LogLabel(self)
         self.__setup_widgets()
     
+    def __start_port(self):
+        files = boot, system, portzip = FileChooser(self).get()
+        for i in files:
+            if not Path(i).exists():
+                self.log.print(f"File {i} does not exist!")
+                return
+
     def __setup_widgets(self):
         def __scroll_event(event):
             number = int(-event.delta / 2)
@@ -72,7 +135,7 @@ class MyUI(ttk.Labelframe):
 
         # label of buttons
         buttonlabel = ttk.Label(self)
-        buttonport = ttk.Button(self, text="一键移植")
+        buttonport = ttk.Button(self, text="一键移植", command=self.__start_port)
         buttonport.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img')
@@ -85,14 +148,3 @@ class MyUI(ttk.Labelframe):
         self.log.pack(side='top', padx=5, pady=5, fill='both', expand='yes')
         for i in "TEST MESSAGE1", "TEST MESSAGE2", "TEST MESSAGE3":
             print(i, file=self.log, flush=True)
-
-if __name__ == '__main__':
-    root = Tk()
-    root.title("MTK Port Tool")
-    root.geometry("320x500")
-
-    myapp = MyUI(root)
-    myapp.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
-
-    root.update()
-    root.mainloop()
