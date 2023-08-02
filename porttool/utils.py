@@ -1,3 +1,5 @@
+import re
+from io import StringIO
 from pathlib import Path
 
 class proputil:
@@ -43,3 +45,18 @@ class proputil:
     def __exit__(self, exc_type, exc_val, exc_tb): # with proputil('build.prop') as p:
         self.save()
         self.propfd.close()
+
+class updaterutil:
+    def __init__(self, fd: StringIO):
+        #self.path = Path(path)
+        self.fd = fd
+        if not self.fd:
+            raise IOError("fd is not valid!")
+        self.context = self.__parse_commands
+    
+    @property
+    def __parse_commands(self): # This part code from @libchara-dev
+        self.fd.seek(0, 0) # set seek from start
+        commands = re.findall(r'(\w+)\((.*?)\)', self.fd.read())
+        parsed_commands = [[command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))] for command, args in commands]
+        return parsed_commands
