@@ -57,7 +57,6 @@ support_chipset_portstep = {
     },
 }
 support_chipset = list(support_chipset_portstep.keys())
-print(support_chipset)
 support_packtype = [
     'zip', 'img'
 ]

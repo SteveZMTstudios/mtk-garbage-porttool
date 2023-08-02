@@ -160,8 +160,8 @@ class MyUI(ttk.Labelframe):
         buttonlabel = ttk.Label(optframe)
         buttonload = ttk.Button(optframe, text="加载移植条目", command=__load_port_item)
         buttonport = ttk.Button(optframe, text="一键移植", command=self.__start_port)
-        buttonload.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
-        buttonport.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
+        buttonload.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
+        buttonport.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img')
 
@@ -173,6 +173,6 @@ class MyUI(ttk.Labelframe):
         # log label
         logframe = ttk.Labelframe(self, text="日志输出")
         self.log = LogLabel(logframe)
-        self.log.pack(side='left', padx=5, pady=5, fill='both')
+        self.log.pack(side='left', fill='both', anchor='center')
         logframe.pack(side='left', padx=5, pady=5, fill='both', expand='yes')
         #__load_port_item()
