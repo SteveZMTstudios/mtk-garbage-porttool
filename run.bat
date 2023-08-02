@@ -1,1 +1,1 @@
-python -m porttool
+python main.py

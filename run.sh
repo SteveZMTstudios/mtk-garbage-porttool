@@ -1,2 +1,2 @@
 #!/usr/bin/sh
-python3 -m porttool
+python3 main.py

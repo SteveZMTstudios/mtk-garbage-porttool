@@ -4,7 +4,7 @@ from .ui import (
     MyUI
 )
 
-if __name__ == '__main__':
+def main():
     root = Tk()
     root.title("MTK Port Tool")
     root.geometry("320x500")
