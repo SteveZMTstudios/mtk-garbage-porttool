@@ -36,7 +36,7 @@ class FileChooser(Toplevel):
             frame = ttk.Frame(self)
             label = ttk.Label(frame, text=__match(index), width=16)
             entry = ttk.Entry(frame, textvariable=current, width=40)
-            button = ttk.Button(frame, text="选择文件", command=lambda: __choose_file(current))
+            button = ttk.Button(frame, text="选择文件", command=lambda x=current: __choose_file(x))
             self.frame.append([frame, label, entry, button])
         for i in self.frame:
             for index, widget in enumerate(i):
