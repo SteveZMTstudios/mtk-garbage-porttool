@@ -14,7 +14,7 @@ from .configs import *
 class FileChooser(Toplevel):
     def __init__(self, parent):
         super().__init__(parent)
-        self.title("请选择要一直的底包的boot, system和要移植的zip卡刷包")
+        self.title("请选择底包的boot, system和要移植的zip卡刷包")
         
         self.portzip = StringVar()
         self.basesys = StringVar()
@@ -86,7 +86,7 @@ class MyUI(ttk.Labelframe):
         super().__init__(parent, text="MTK 低端机移植工具")
         self.chipset_select = StringVar(value='mt65')
         self.pack_type = StringVar(value='zip')
-        self.log = LogLabel(self)
+        #self.log = LogLabel(self)
         self.item = []
         self.itembox = [] # save Checkbutton
         self.__setup_widgets()
@@ -128,7 +128,8 @@ class MyUI(ttk.Labelframe):
             for i in self.itembox:
                 i.pack(side='top', fill='x', padx=5)
         # label of support devices
-        optlabel = ttk.Label(self)
+        optframe = ttk.Frame(self)
+        optlabel = ttk.Label(optframe)
 
         opttext = ttk.Label(optlabel, text="芯片类型", anchor='e')
         optmenu = ttk.OptionMenu(optlabel, self.chipset_select, support_chipset[0], *support_chipset)
@@ -139,9 +140,9 @@ class MyUI(ttk.Labelframe):
         optlabel.pack(side='top', fill='x')
 
         # Frame of support action
-        actframe = ttk.Labelframe(self, text="支持的移植条目", height=180)
+        actframe = ttk.Labelframe(optframe, text="支持的移植条目", height=180)
         
-        actcanvas = Canvas(actframe, )
+        actcanvas = Canvas(actframe)
         actscroll = ttk.Scrollbar(actframe, orient='vertical', command=actcanvas.yview)
 
         actcanvas.configure(yscrollcommand=actscroll.set)
@@ -156,9 +157,9 @@ class MyUI(ttk.Labelframe):
         #self.actcvframe.bind("<Configure>", __scroll_func)
 
         # label of buttons
-        buttonlabel = ttk.Label(self)
-        buttonload = ttk.Button(self, text="加载移植条目", command=__load_port_item)
-        buttonport = ttk.Button(self, text="一键移植", command=self.__start_port)
+        buttonlabel = ttk.Label(optframe)
+        buttonload = ttk.Button(optframe, text="加载移植条目", command=__load_port_item)
+        buttonport = ttk.Button(optframe, text="一键移植", command=self.__start_port)
         buttonload.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
         buttonport.pack(side='top', fill='x', padx=5, pady=5, expand='yes')
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip')
@@ -168,6 +169,10 @@ class MyUI(ttk.Labelframe):
         buttoncheck2.grid(column=1, row=1, padx=5, pady=5)
         buttonlabel.pack(side='top', padx=5, pady=5, fill='x', expand='yes')
 
+        optframe.pack(side='left', padx=5, pady=5, fill='y', expand='no')
         # log label
-        self.log.pack(side='top', padx=5, pady=5, fill='both', expand='yes')
+        logframe = ttk.Labelframe(self, text="日志输出")
+        self.log = LogLabel(logframe)
+        self.log.pack(side='left', padx=5, pady=5, fill='both')
+        logframe.pack(side='left', padx=5, pady=5, fill='both', expand='yes')
         #__load_port_item()

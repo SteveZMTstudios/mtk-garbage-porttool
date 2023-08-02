@@ -25,7 +25,7 @@ support_chipset_portstep = {
             'firmware': [ # below is system
                 "etc/firmware" # if is a directory, will remove first
             ],
-            'firmware': [
+            'mddb': [
                 "etc/mddb"
             ],
             'malidriver': [
@@ -38,8 +38,23 @@ support_chipset_portstep = {
     },
     'kernel only (only replace kernel)': {
         'kernel_only': True,
-        'flags': {},
-    }
+        'flags': {
+            'replace_kernel': True,
+            'replace_firmware': True,
+            'replace_mddb': True,
+        },
+        'replace': {
+            'kernel': [ # boot from base -> port
+                "split_img/boot.img-kernel"
+            ],
+            'firmware': [ # below is system
+                "etc/firmware" # if is a directory, will remove first
+            ],
+            'mddb': [
+                "etc/mddb"
+            ],
+        },
+    },
 }
 support_chipset = list(support_chipset_portstep.keys())
 print(support_chipset)

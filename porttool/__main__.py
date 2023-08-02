@@ -7,7 +7,7 @@ from .ui import (
 def main():
     root = Tk()
     root.title("MTK Port Tool")
-    root.geometry("320x500")
+    #root.geometry("860x480")
 
     myapp = MyUI(root)
     myapp.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
