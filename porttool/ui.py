@@ -92,27 +92,34 @@ class MyUI(ttk.Labelframe):
         self.__setup_widgets()
     
     def __start_port(self):
+        # item check not 0
+        if self.item.__len__() == 0:
+            print("Error: 移植条目为0，请先加载移植条目！", file=self.log)
+            return
         files = boot, system, portzip = FileChooser(self).get()
         for i in files:
             if not Path(i).exists():
                 self.log.print(f"File {i} does not exist!")
                 return
-        print(files, file=self.log)
+        print(f"底包boot路径为：{boot}\n"
+              f"底包system镜像路径为：{system}\n"
+              f"移植包路径为{portzip}", file=self.log)
 
     def __setup_widgets(self):
         def __scroll_event(event):
             number = int(-event.delta / 2)
             actcanvas.yview_scroll(number, 'units')
-        def __scroll_func(event):
-            actcanvas.configure(scrollregion=actcanvas.bbox("all"), width=300, height=180)
+        #def __scroll_func(event):
+        #    actcanvas.configure(scrollregion=actcanvas.bbox("all"), width=300, height=180)
         
         def __create_cv_frame():
             self.actcvframe = ttk.Frame(actcanvas)
             actcanvas.create_window(0, 0, window=self.actcvframe, anchor='nw')
 
-        def __load_port_item():
+        def __load_port_item(select):
         
-            select = self.chipset_select.get()
+            #select = self.chipset_select.get()
+            print(f"选中移植方案为{select}...", file=self.log)
             item = support_chipset_portstep[select]['flags']
             # Destory last items
             self.item = []
@@ -132,7 +139,7 @@ class MyUI(ttk.Labelframe):
         optlabel = ttk.Label(optframe)
 
         opttext = ttk.Label(optlabel, text="芯片类型", anchor='e')
-        optmenu = ttk.OptionMenu(optlabel, self.chipset_select, support_chipset[0], *support_chipset)
+        optmenu = ttk.OptionMenu(optlabel, self.chipset_select, support_chipset[0], *support_chipset, command=__load_port_item)
 
         opttext.pack(side='left', padx=5, pady=5, expand='no')
         optmenu.pack(side='left', fill='x', padx=5, pady=5, expand='no')
@@ -158,9 +165,7 @@ class MyUI(ttk.Labelframe):
 
         # label of buttons
         buttonlabel = ttk.Label(optframe)
-        buttonload = ttk.Button(optframe, text="加载移植条目", command=__load_port_item)
         buttonport = ttk.Button(optframe, text="一键移植", command=self.__start_port)
-        buttonload.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
         buttonport.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img')
@@ -175,4 +180,4 @@ class MyUI(ttk.Labelframe):
         self.log = LogLabel(logframe)
         self.log.pack(side='left', fill='both', anchor='center')
         logframe.pack(side='left', padx=5, pady=5, fill='both', expand='yes')
-        #__load_port_item()
+        __load_port_item(self.chipset_select.get())
