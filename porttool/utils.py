@@ -157,7 +157,7 @@ class portutils:
     def __port_boot(self) -> bool:
         def __replace(src: Path, dest: Path):
             print(f"boot替换 {src} -> {dest}...", file=self.std)
-            return Path(src).write_bytes(dest.read_bytes())
+            return dest.write_bytes(src.read_bytes())
         basedir = Path("tmp/base")
         portdir = Path("tmp/port")
         # make new dir
@@ -290,6 +290,8 @@ class portutils:
         for item in self.items['flags']:
             item_flag = self.items[item]
             if not item_flag: continue
+            if item == 'replace_kernel' or item == 'replace_fstab':
+                continue
             if item.startswith("replace_"):
                 for i in self.items['replace'][item.split('_')[1]]:
                     if base_prefix.joinpath(i).exists():
@@ -349,7 +351,7 @@ class portutils:
         for item in self.items['flags']:
             if item == 'use_custom_update-binary':
                 print("使用自带的update-binary以解决在twrp刷入报错的问题", file=self.std)
-                Path("tmp/rom/META-INF/com/google/android/updater-script").write_bytes(
+                Path("tmp/rom/META-INF/com/google/android/update-binary").write_bytes(
                     Path("bin/update-binary").read_bytes())
         print("打包卡刷包.....", end='', file=self.std)
         outpath = Path(f"out/{op.basename(self.portzip)}")
