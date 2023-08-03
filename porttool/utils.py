@@ -1,6 +1,10 @@
 import re
 from io import StringIO
 from pathlib import Path
+from zipfile import ZipFile, ZIP_DEFLATED
+from os import walk
+import os.path as op
+import lzma
 
 class proputil:
     def __init__(self, propfile: str):
@@ -60,3 +64,28 @@ class updaterutil:
         commands = re.findall(r'(\w+)\((.*?)\)', self.fd.read())
         parsed_commands = [[command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))] for command, args in commands]
         return parsed_commands
+
+class ziputil:
+    def __init__(self):
+        pass
+    
+    def decompress(zippath: str, outdir: str):
+        with ZipFile(zippath, 'r') as zipf:
+            zipf.extractall(outdir)
+    
+    def compress(zippath: str, indir: str):
+        with ZipFile(zippath, 'w', ZIP_DEFLATED) as zipf:
+            for root, dirs, files in walk(indir):
+                for file in files:
+                    file_path = op.join(root, file)
+                    zip_path = op.relpath(zippath, indir)
+                    zipf.write(file_path, zip_path)
+
+class xz_util:
+    def __init__(self):
+        pass
+
+    def compress(src_file_path, dest_file_path):
+        with open(src_file_path, 'rb') as src_file:
+            with lzma.open(dest_file_path, 'wb') as dest_file:
+                dest_file.write(src_file.read())
