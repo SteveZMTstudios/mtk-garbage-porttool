@@ -435,7 +435,7 @@ def write_cpio(cpiolist, output):
 
 class CPIOGZIP(GzipFile):
     # dont write filename
-    def _write_gzip_header(self):
+    def _write_gzip_header(self, compresslevel: int = 9):
         self.fileobj.write(struct.pack('4B', 0x1f, 0x8b, 0x08, 0x00))
         self.fileobj.write(struct.pack('4s', b''))
         self.fileobj.write(struct.pack('2B', 0x00, 0x03))

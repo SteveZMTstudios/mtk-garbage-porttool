@@ -138,3 +138,6 @@ dmypy.json
 cython_debug/
 porttool.bat
 test.py
+tmp
+base
+out

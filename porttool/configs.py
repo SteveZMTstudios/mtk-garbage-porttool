@@ -7,14 +7,25 @@ support_chipset_portstep = {
             'replace_fstab': False,
             'selinux_permissive': True,
             'enable_adb': True,
+            # ========== split line ============ ↑ is boot.img ↓ is system
             'replace_firmware': True,
             'replace_mddb': True,
             'replace_malidriver': True,
             'replace_audiodriver': False,
-            'single_simcard': False, # else will follow else rules
+            'replace_libshowlogo': False,
+            'replace_mtk-kpd': True,
+            'replace_gralloc': True,
+            'replace_hwcomposer': True,
+            'replace_ril': False,
+            'single_simcard': False,
             'dual_simcard': False,
+            'fit_density': True,
+            'change_model': True,
+            'change_timezone': True,
+            'change_locale': True,
+            'use_custom_update-binary': True,
         },
-        'replace': {
+        'replace': { # if you flags startswith replace_ you must define which files need to be replace
             'kernel': [ # boot from base -> port
                 "kernel"
             ],
@@ -38,15 +49,44 @@ support_chipset_portstep = {
                 "etc/audio_effects.conf",
                 "etc/audio_policy.conf"
             ],
+            'libshowlogo': [
+                "lib/libshowlogo.so"
+            ],
+            'mtk-kpd': [
+                "usr/keylayout/mtk-kpd.kl"
+            ],
+            'ril': [
+                "bin/ccci_fsd",
+                "bin/ccci_mdinit",
+                "bin/gsm0710muxd",
+                "bin/gsm0710muxdmd2 ",
+                "bin/rild",
+                "bin/rildmd2",
+                "lib/librilmtk.so",
+                "lib/librilmtkmd2.so",
+                "lib/librilutils.so ",
+                "lib/mtk-ril.so",
+                "lib/mtk-rilmd2.so",
+            ],
+            'gralloc': [
+                "lib/hw/gralloc.mt6572.so",
+                "lib/hw/gralloc.mt6582.so",
+                "lib/hw/gralloc.mt6592.so",
+            ],
+            'hwcomposer': [
+                "lib/hw/hwcomposer.mt6572.so",
+                "lib/hw/hwcomposer.mt6582.so",
+                "lib/hw/hwcomposer.mt6592.so",
+            ]
         },
     },
     'kernel only (only replace kernel)': {
         'kernel_only': True,
         'flags': {
             'replace_kernel': True,
-            'replace_firmware': True,
             'selinux_permissive': True,
             'enable_adb': True,
+            'replace_firmware': True,
             'replace_mddb': True,
         },
         'replace': {

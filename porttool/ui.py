@@ -21,6 +21,14 @@ class FileChooser(Toplevel):
         self.portzip = StringVar()
         self.basesys = StringVar()
         self.baseboot = StringVar()
+        
+        basesys = Path("base/system.img")
+        baseboot = Path("base/boot.img")
+        if basesys.exists():
+            self.basesys.set(basesys.absolute())
+        if baseboot.exists():
+            self.baseboot.set(baseboot.absolute())
+
         self.frame = []
         self.__setup_widgets()
         self.focus()
@@ -34,6 +42,7 @@ class FileChooser(Toplevel):
                 case _: return ""
         def __choose_file(val: StringVar):
             val.set(askopenfilename(initialdir=getcwd()))
+            self.focus()
         
         for index, current in enumerate([self.portzip, self.baseboot, self.basesys]):
             frame = ttk.Frame(self)
@@ -77,6 +86,7 @@ class LogLabel(scrolledtext.ScrolledText):
             self.insert('end', i)
             #self.vars.append(i)
         #self.insert('end', end)
+        self.see('end')
 
     def flush(self): pass # have no idea how to flush on text widget
 
@@ -99,9 +109,9 @@ class MyUI(ttk.Labelframe):
             print("Error: 移植条目为0，请先加载移植条目！", file=self.log)
             return
         files = boot, system, portzip = FileChooser(self).get()
-        for i in files:
-            if not Path(i).exists():
-                self.log.print(f"File {i} does not exist!")
+        for i in boot, system, portzip:
+            if not Path(i).exists() or i == '':
+                print(f"文件{i}未选择或不存在", file=self.log)
                 return
         print(f"底包boot路径为：{boot}\n"
               f"底包system镜像路径为：{system}\n"
@@ -113,7 +123,8 @@ class MyUI(ttk.Labelframe):
         
         # start to port
         p = portutils(
-            newdict, *files, True if self.pack_type.get() == 'img' else False
+            newdict, *files, True if self.pack_type.get() == 'img' else False,
+            self.log
         ).start
         DummyProcess(target=p).start()
 
@@ -121,12 +132,14 @@ class MyUI(ttk.Labelframe):
         def __scroll_event(event):
             number = int(-event.delta / 2)
             actcanvas.yview_scroll(number, 'units')
-        #def __scroll_func(event):
-        #    actcanvas.configure(scrollregion=actcanvas.bbox("all"), width=300, height=180)
+        def __scroll_func(event):
+            actcanvas.configure(scrollregion=actcanvas.bbox("all"), width=300, height=180)
         
         def __create_cv_frame():
             self.actcvframe = ttk.Frame(actcanvas)
             actcanvas.create_window(0, 0, window=self.actcvframe, anchor='nw')
+            self.actcvframe.bind("<Configure>", __scroll_func)
+            actcanvas.update()
 
         def __load_port_item(select):
         
@@ -173,7 +186,6 @@ class MyUI(ttk.Labelframe):
         actcanvas.pack(side='right', fill='x', expand='yes', anchor='e')
         actframe.pack(side='top', fill='x', expand='yes')
         __create_cv_frame()
-        #self.actcvframe.bind("<Configure>", __scroll_func)
 
         # label of buttons
         buttonlabel = ttk.Label(optframe)
