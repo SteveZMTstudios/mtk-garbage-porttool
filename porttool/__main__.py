@@ -6,6 +6,8 @@ from .ui import (
 from os import name
 if name == 'nt':
     import ctypes
+    from multiprocessing.dummy import freeze_support
+    freeze_support()
 
 def main():
     root = Tk()

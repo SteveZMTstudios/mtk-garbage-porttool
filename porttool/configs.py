@@ -5,6 +5,8 @@ support_chipset_portstep = {
         'flags': { # flag control in item
             'replace_kernel': True, # startwith replace will replace file
             'replace_fstab': False,
+            'selinux_permissive': True,
+            'enable_adb': True,
             'replace_firmware': True,
             'replace_mddb': True,
             'replace_malidriver': True,
@@ -14,13 +16,13 @@ support_chipset_portstep = {
         },
         'replace': {
             'kernel': [ # boot from base -> port
-                "split_img/boot.img-kernel"
+                "kernel"
             ],
             'fstab': [  # boot from base -> port
-                "ramdisk/fstab",
-                "ramdisk/fstab.mt6572",
-                "ramdisk/fstab.mt6582",
-                "ramdisk/fstab.mt6592",
+                "initrd/fstab",
+                "initrd/fstab.mt6572",
+                "initrd/fstab.mt6582",
+                "initrd/fstab.mt6592",
             ],
             'firmware': [ # below is system
                 "etc/firmware" # if is a directory, will remove first
@@ -32,7 +34,9 @@ support_chipset_portstep = {
                 "lib/libMali.so"
             ],
             'audiodriver': [
-                "lib/libaudio.primary.default.so"
+                "lib/libaudio.primary.default.so",
+                "etc/audio_effects.conf",
+                "etc/audio_policy.conf"
             ],
         },
     },
@@ -41,11 +45,13 @@ support_chipset_portstep = {
         'flags': {
             'replace_kernel': True,
             'replace_firmware': True,
+            'selinux_permissive': True,
+            'enable_adb': True,
             'replace_mddb': True,
         },
         'replace': {
             'kernel': [ # boot from base -> port
-                "split_img/boot.img-kernel"
+                "kernel"
             ],
             'firmware': [ # below is system
                 "etc/firmware" # if is a directory, will remove first

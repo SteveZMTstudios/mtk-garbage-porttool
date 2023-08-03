@@ -9,7 +9,9 @@ from tkinter import (
 from tkinter.filedialog import askopenfilename
 from os import getcwd
 from pathlib import Path
+from multiprocessing.dummy import DummyProcess
 from .configs import *
+from .utils import portutils
 
 class FileChooser(Toplevel):
     def __init__(self, parent):
@@ -103,7 +105,17 @@ class MyUI(ttk.Labelframe):
                 return
         print(f"底包boot路径为：{boot}\n"
               f"底包system镜像路径为：{system}\n"
-              f"移植包路径为{portzip}", file=self.log)
+              f"移植包路径为：{portzip}", file=self.log)
+        # config items
+        newdict = support_chipset_portstep[self.chipset_select.get()]
+        for key, tkbool in self.item:
+            newdict[key] = tkbool.get()
+        
+        # start to port
+        p = portutils(
+            newdict, *files, True if self.pack_type.get() == 'img' else False
+        ).start
+        DummyProcess(target=p).start()
 
     def __setup_widgets(self):
         def __scroll_event(event):
