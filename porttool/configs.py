@@ -1,8 +1,13 @@
 # configs for porttool
 support_chipset_portstep = {
     'mt6572/mt6582/mt6592 kernel-3.4.67': {
-        'kernel_only': False,
+        'partitions': { # This is use for auto generage updater-script
+            'system': '/dev/block/mmcblk0p4',
+            'boot': '/dev/block/bootimg',
+        },
         'flags': { # flag control in item
+            'generate_script': True, # Auto generate updater-script
+            # ========== split line ============ 
             'replace_kernel': True, # startwith replace will replace file
             'replace_fstab': False,
             'selinux_permissive': True,
@@ -27,7 +32,9 @@ support_chipset_portstep = {
         },
         'replace': { # if you flags startswith replace_ you must define which files need to be replace
             'kernel': [ # boot from base -> port
-                "kernel"
+                "kernel",
+                # commonly not compressed by gz at mt6572 etc
+                #"kernel.gz",
             ],
             'fstab': [  # boot from base -> port
                 "initrd/fstab",
@@ -81,8 +88,12 @@ support_chipset_portstep = {
         },
     },
     'kernel only (only replace kernel)': {
-        'kernel_only': True,
+        'partitions': {
+            # of couse we have no idea to know system and boot partition at which position
+            # keep empty and set generate_script: False
+        },
         'flags': {
+            'generate_script': False, # do not generate updater-script on kernel only mode
             'replace_kernel': True,
             'selinux_permissive': True,
             'enable_adb': True,
@@ -92,6 +103,7 @@ support_chipset_portstep = {
         'replace': {
             'kernel': [ # boot from base -> port
                 "kernel"
+                "kernel.gz" # may be gz compressed
             ],
             'firmware': [ # below is system
                 "etc/firmware" # if is a directory, will remove first
