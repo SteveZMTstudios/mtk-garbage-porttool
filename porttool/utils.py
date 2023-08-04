@@ -533,7 +533,6 @@ class portutils:
             make_ext4fs_bin,
             #'-s', # sparse image
             '-J', # has journal
-            '-b', '2048', # block size
             '-T', '1', # custom mtime
             '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
             '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
