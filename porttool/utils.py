@@ -222,12 +222,12 @@ class portutils:
                     for i in self.items['replace']['kernel']:
                         if basedir.joinpath(i).exists():
                             print(f"替换内核 {i}", file=self.std)
-                            __replace(basedir.joinpath(i), basedir.joinpath(i).absolute())
+                            __replace(basedir.joinpath(i), portdir.joinpath(i).absolute())
                 case 'replace_fstab':
                     for i in self.items['replace']['fstab']:
                         if basedir.joinpath(i).exists():
                             print(f"替换分区表 {i}", file=self.std)
-                            __replace(basedir.joinpath(i), basedir.joinpath(i).absolute())
+                            __replace(basedir.joinpath(i), portdir.joinpath(i).absolute())
                 case 'selinux_permissive':
                     if portdir.joinpath("bootinfo.txt").exists():
                         with portdir.joinpath("bootinfo.txt").open("r+") as f:
@@ -548,10 +548,10 @@ class portutils:
     def start(self):
         self.__decompress_portzip()
         self.__port_boot()
-        self.__port_system()
-        if self.genimg:
-            self.__pack_img()
-        else: self.__pack_rom()
+        #self.__port_system()
+        #if self.genimg:
+        #    self.__pack_img()
+        #else: self.__pack_rom()
     
     def clean(self):
         print("移植完成，清理目录", file=self.std)
