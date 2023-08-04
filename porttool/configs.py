@@ -1,3 +1,7 @@
+from os import getcwd
+import os.path as op
+from . import archdetect
+
 # configs for porttool
 support_chipset_portstep = {
     'mt6572/mt6582/mt6592 kernel-3.4.67': {
@@ -115,6 +119,7 @@ support_chipset_portstep = {
     },
 }
 support_chipset = list(support_chipset_portstep.keys())
-support_packtype = [
-    'zip', 'img'
-]
+support_packtype = ['zip', 'img']
+ostype, arch = archdetect.retTypeAndMachine()
+ext_ext = '.exe' if ostype == 'win' else ''
+make_ext4fs_bin = op.join(getcwd(), "bin", ostype, arch, "make_ext4fs"+ext_ext)

@@ -2,14 +2,21 @@ import re
 from io import StringIO
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from os import walk, getcwd, chdir
+from os import walk, getcwd, chdir, symlink, readlink, name as osname, stat
 import os.path as op
 from shutil import rmtree, copytree
 import lzma
+import subprocess
 from sys import stdout
 from hashlib import md5
 from .bootimg import unpack_bootimg, repack_bootimg
 from .imgextractor import Extractor
+from .configs import (
+    make_ext4fs_bin
+)
+
+if osname == 'nt':
+    from ctypes import windll, wintypes
 
 class proputil:
     def __init__(self, propfile: str):
@@ -57,17 +64,17 @@ class proputil:
         self.save()
 
 class updaterutil:
-    def __init__(self, fd: StringIO):
+    def __init__(self, fd):
         #self.path = Path(path)
         self.fd = fd
         if not self.fd:
             raise IOError("fd is not valid!")
-        self.context = self.__parse_commands
+        self.content = self.__parse_commands
     
     @property
     def __parse_commands(self): # This part code from @libchara-dev
         self.fd.seek(0, 0) # set seek from start
-        commands = re.findall(r'(\w+)\((.*?)\)', self.fd.read())
+        commands = re.findall(r'(\w+)\((.*?)\)', self.fd.read().replace('\n', ''))
         parsed_commands = [[command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))] for command, args in commands]
         return parsed_commands
 
@@ -145,6 +152,25 @@ class portutils:
             if not Path(i).exists():
                 return False
         return True
+
+    def execv(self, cmd, verbose=False):
+        if verbose:
+            print("执行命令：\n", *cmd if type(cmd) == list else cmd, file=self.std)
+        creationflags = subprocess.CREATE_NO_WINDOW if osname == 'nt' else 0
+        try:
+            ret = subprocess.run(cmd,
+                                   shell=False,
+                                   #stdin=subprocess.PIPE,
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT,
+                                   creationflags=creationflags
+                                )
+        except:
+            self.std.write("! Cannot execute program\n")
+            return -1
+        if verbose:
+            print("结果返回：\n", ret.stdout.decode('utf-8', errors='ignore'), file=self.std)
+        return ret.returncode
 
     def __decompress_portzip(self):
         outdir = Path("tmp/rom")
@@ -239,7 +265,7 @@ class portutils:
         bootutil(str(port)).repack()
         outboot = Path(portdir.joinpath("boot-new.img"))
         to = Path("tmp/rom/boot.img")
-        to.write_bytes(outboot.read_bytes())
+        __replace(outboot, to)
         return True
     
     def __port_system(self):
@@ -256,6 +282,7 @@ class portutils:
                 )
 
         unpack_flag = False
+        print("检测system md5检验和是否相同", file=self.std)
         with open(self.sysimg, 'rb') as f:
             sysmd5 = md5(f.read()).hexdigest()
         md5path = Path("base/system.md5")
@@ -362,7 +389,161 @@ class portutils:
         return
     
     def __pack_img(self):
-        print("打包system.img暂不支持，请使用打包成zip的功能")
+        def __readlink(dest: str):
+            if osname == 'nt':
+                with open(dest, 'rb') as f:
+                    if f.read(10) == b'!<symlink>':
+                        return f.read().decode('utf-16').rstrip('\0')
+                    else: return None
+            else:
+                try:
+                    readlink(dest)
+                except: return None
+
+        def __symlink(src: str, dest: str):
+            def setSystemAttrib(path: str) -> wintypes.BOOL:
+                return windll.kernel32.SetFileAttributesA(path.encode('gb2312'), wintypes.DWORD(0x4))
+        
+            print(f"创建软链接 [{src}] -> [{dest}]", file=self.std)
+            pdest = Path(dest)
+            if not pdest.parent.exists():
+                pdest.parent.mkdir(parents=True)
+            if osname == 'nt':
+                with open(dest, 'wb') as f:
+                    f.write(
+                        b"!<symlink>" + src.encode('utf-16') + b'\0\0')
+                setSystemAttrib(dest)
+            else: symlink(src, dest)
+        
+        def __pack_fit_size():
+            total = 0
+            for root, dirs, files in walk("tmp/rom/system"):
+                for file in files:
+                    total += stat(op.join(root, file)).st_size
+            return total * 1.2
+        
+        print("将输出打包为system镜像", file=self.std)
+        updater = Path("tmp/rom/META-INF/com/google/android/updater-script")
+        config_dir = Path("tmp/config")
+        if config_dir.exists():
+            rmtree(config_dir)
+        config_dir.mkdir(parents=True)
+
+        fs_label = []
+        fc_label = []
+        fs_label.append(
+            ["/", '0', '0', '0755'])
+        fs_label.append(
+            ["/lost\\+found", '0', '0', '0700'])
+        fc_label.append(
+            ['/', 'u:object_r:system_file:s0'])
+        fc_label.append(
+            ['/system(/.*)?', 'u:object_r:system_file:s0'])
+        if not updater.exists():
+            self.std.write(f"Error: 刷机脚本不存在")
+            return
+        
+        print("分析刷机脚本...", file=self.std)
+        contents = updaterutil(updater.open('r', encoding='utf-8')).content
+        romprefix = Path("tmp/rom/")
+        last_fpath = ''
+        for content in contents:
+            command, *args = content
+            match command:
+                case 'symlink':
+                    src, *targets = args
+                    for target in targets:
+                        __symlink(src, str(romprefix.joinpath(target.lstrip('/'))))
+                case 'set_metadata' | 'set_metadata_recursive':
+                    dirmode = False if command == 'set_metadata' else True
+                    fpath, *fargs = args
+
+                    fpath = fpath.replace("+", "\\+").replace("[", "\\[").replace('//', '/')
+                    if fpath == last_fpath: continue # skip same path
+                    # initial
+                    uid, gid, mode, extra = '0', '0', '644', ''
+                    selable = 'u:object_r:system_file:s0' # common system selable
+                    for index, farg in enumerate(fargs):
+                        match farg:
+                            case 'uid':
+                                uid = fargs[index+1]
+                            case 'gid':
+                                gid = fargs[index+1]
+                            case 'mode'|'fmode'|'dmode':
+                                if dirmode and farg == 'dmode':
+                                    mode = fargs[index+1]
+                                else:
+                                    mode = fargs[index+1]
+                            case 'capabilities':
+                                #continue
+                                if fargs[index+1] == '0x0':
+                                    extra = ''
+                                else:
+                                    extra = 'capabilities=' + fargs[index+1]
+                            case 'selabel':
+                                selable = fargs[index+1]
+                    fs_label.append(
+                        [fpath.lstrip('/'), uid, gid, mode, extra])
+                    fc_label.append(
+                        [fpath, selable])
+                    last_fpath = fpath
+
+        #Patch fs_config
+        print("添加缺失的文件和权限", file=self.std)
+        fs_files = [i[0] for i in fs_label]
+        for root, dirs, files in walk("tmp/rom/system"):
+            if "tmp/install" in root.replace('\\', '/'): continue # skip lineage spec
+            for dir in dirs:
+                unix_path = op.join(
+                    op.join("/system", op.relpath(op.join(root, dir), "tmp/rom/system")).replace("\\", "/")
+                ).replace("[", "\\[")
+                if not unix_path in fs_files:
+                    fs_label.append([unix_path.lstrip('/'), '0', '0', '0755'])
+            for file in files:
+                unix_path = op.join(
+                    op.join("/system", op.relpath(op.join(root, file), "tmp/rom/system")).replace("\\", "/")
+                ).replace("[", "\\[")
+                if not unix_path in fs_files:
+                    link = __readlink(op.join(root, file))
+                    if link:
+                        fs_label.append(
+                            [unix_path.lstrip('/'), '0', '2000', '0755', link])
+                    else:
+                        if "bin/" in unix_path:
+                            mode = '0755'
+                        else: mode = '0644'
+                        fs_label.append(
+                            [unix_path.lstrip('/'), '0', '2000', mode])
+
+        # generate config
+        print("生成fs_config 和 file_contexts", file=self.std)
+        fs_config = config_dir.joinpath("system_fs_config").open('w', newline='\n')
+        file_contexts = config_dir.joinpath("system_file_contexts").open('w', newline='\n')
+        fs_label.sort(); fc_label.sort()
+        for fs in fs_label:
+            fs_config.write(" ".join(fs)+'\n')
+        for fc in fc_label:
+            file_contexts.write(" ".join(fc)+'\n')
+        fs_config.close()
+        file_contexts.close()
+
+        fit_size = __pack_fit_size()
+        sys_size = stat(self.sysimg).st_size
+        make_ext4fs_cmd = [
+            make_ext4fs_bin,
+            #'-s', # sparse image
+            '-J', # has journal
+            '-b', '2048', # block size
+            '-T', '1', # custom mtime
+            '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
+            '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
+            '-S', f"{str(config_dir.joinpath('system_file_contexts'))}",
+            '-L', 'system', '-a', 'system',
+            "out/system.img", "tmp/rom/system",
+        ]
+        self.execv(make_ext4fs_cmd, verbose=True)
+        Path("out/boot.img").write_bytes(Path("tmp/rom/boot.img").read_bytes())
+        #self.clean()
         return
 
     def start(self):
@@ -372,3 +553,8 @@ class portutils:
         if self.genimg:
             self.__pack_img()
         else: self.__pack_rom()
+    
+    def clean(self):
+        print("移植完成，清理目录", file=self.std)
+        if Path("tmp").exists():
+            rmtree("tmp")
