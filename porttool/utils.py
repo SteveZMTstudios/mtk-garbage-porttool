@@ -548,10 +548,10 @@ class portutils:
     def start(self):
         self.__decompress_portzip()
         self.__port_boot()
-        #self.__port_system()
-        #if self.genimg:
-        #    self.__pack_img()
-        #else: self.__pack_rom()
+        self.__port_system()
+        if self.genimg:
+            self.__pack_img()
+        else: self.__pack_rom()
     
     def clean(self):
         print("移植完成，清理目录", file=self.std)
