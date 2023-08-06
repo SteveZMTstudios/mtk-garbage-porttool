@@ -138,7 +138,7 @@ def parse_bootimg(bootimg):
     """
 
     bootinfo = open('bootinfo.txt', 'w')
-    check_mtk_head(bootimg, bootinfo)
+    #check_mtk_head(bootimg, bootinfo)
 
     (magic,
      kernel_size, kernel_addr,
@@ -516,7 +516,7 @@ def parse_bootinfo(bootinfo):
                  'cmdline': set_cmdline}
 
     while True:
-        line = bootinfo.readline()
+        line = bootinfo.readline().lstrip()
         if not line:
             break
         lines = line.split(':', 1)
@@ -568,10 +568,10 @@ def repack_bootimg(_base=None, _cmdline=None, _page_size=None, _padding_size=Non
         cmdline = _cmdline
 
     if _page_size is not None:
-        page_size = int(str(_page_size))
+        page_size = int(str(_page_size), 16)
 
     if _padding_size is not None:
-        padding_size = int(str(_padding_size))
+        padding_size = int(str(_padding_size), 16)
 
     if os.path.exists('bootinfo.txt'):
         bootinfo = open('bootinfo.txt', 'r')
