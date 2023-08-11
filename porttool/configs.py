@@ -106,7 +106,7 @@ support_chipset_portstep = {
         },
         'replace': {
             'kernel': [ # boot from base -> port
-                "kernel"
+                "kernel"，
                 "kernel.gz" # may be gz compressed
             ],
             'firmware': [ # below is system
