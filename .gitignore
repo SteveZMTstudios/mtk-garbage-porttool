@@ -1148,3 +1148,5 @@ main.onefile-build/scons-report.txt
 main.onefile-build/static_src/OnefileBootstrap.c
 main.onefile-build/static_src/OnefileBootstrap.o
 main.exe
+
+configs.json

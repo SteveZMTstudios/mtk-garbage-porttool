@@ -2,6 +2,8 @@ from os import getcwd
 import os.path as op
 from . import archdetect
 
+import json
+
 # configs for porttool
 support_chipset_portstep = {
     'mt6572/mt6582/mt6592 kernel-3.4.67': {
@@ -118,6 +120,14 @@ support_chipset_portstep = {
         },
     },
 }
+
+if op.isfile("configs.json"):
+    with open("configs.json", 'r') as c:
+        support_chipset_portstep = json.load(c)
+else:
+    with open("configs.json", 'w') as c:
+        json.dump(support_chipset_portstep, c, indent=4)
+
 support_chipset = list(support_chipset_portstep.keys())
 support_packtype = ['zip', 'img']
 ostype, arch = archdetect.retTypeAndMachine()
