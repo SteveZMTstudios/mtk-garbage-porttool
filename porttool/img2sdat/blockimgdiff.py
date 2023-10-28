@@ -17,7 +17,7 @@ from __future__ import print_function
 from collections import deque, OrderedDict
 from hashlib import sha1
 import array
-import common
+from . import common
 import functools
 import heapq
 import itertools
@@ -29,7 +29,7 @@ import threading
 import time
 import tempfile
 
-from rangelib import RangeSet
+from .rangelib import RangeSet
 
 
 __all__ = ["EmptyImage", "DataImage", "BlockImageDiff"]

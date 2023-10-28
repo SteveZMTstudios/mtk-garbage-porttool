@@ -1,1 +1,1 @@
-from img2sdat import main
+from .img2sdat import main

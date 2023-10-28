@@ -9,7 +9,7 @@
 from __future__ import print_function
 
 import sys, os, errno, tempfile
-import common, blockimgdiff, sparse_img
+from . import common, blockimgdiff, sparse_img
 
 def main(INPUT_IMAGE, OUTDIR='.', VERSION=None, PREFIX='system'):
     global input

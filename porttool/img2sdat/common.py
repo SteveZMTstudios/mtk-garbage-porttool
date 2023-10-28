@@ -31,7 +31,7 @@ import threading
 import time
 import zipfile
 
-import blockimgdiff
+from . import blockimgdiff
 
 from hashlib import sha1 as sha1
 
