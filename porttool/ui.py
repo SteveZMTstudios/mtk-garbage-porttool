@@ -101,6 +101,10 @@ class MyUI(ttk.Labelframe):
         #self.log = LogLabel(self)
         self.item = []
         self.itembox = [] # save Checkbutton
+
+        self.patch_magisk = BooleanVar(value=False)
+        self.target_arch = StringVar(value='arm64')
+        self.magisk_apk = StringVar(value="magisk.apk")
         self.__setup_widgets()
     
     def __start_port(self):
@@ -194,8 +198,24 @@ class MyUI(ttk.Labelframe):
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip', offvalue='img')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img', offvalue='zip')
 
-        buttoncheck1.grid(column=0, row=1, padx=5, pady=5)
-        buttoncheck2.grid(column=1, row=1, padx=5, pady=5)
+        buttoncheck1.grid(column=0, row=0, padx=5, pady=5)
+        buttoncheck2.grid(column=1, row=0, padx=5, pady=5)
+
+        
+        magiskarch = ttk.OptionMenu(buttonlabel, self.target_arch, "arm64", *["arm64", "arm", "x86", "x86_64"])
+        
+
+        magiskapkentry = ttk.Entry(buttonlabel, textvariable=self.magisk_apk)
+        magiskapkentry.bind("<Button-1>", lambda x:self.magisk_apk.set(askopenfilename()))
+        
+        buttonmagisk = ttk.Checkbutton(buttonlabel, text="修补magisk", variable=self.patch_magisk, onvalue=True, offvalue=False, command=lambda: (
+            magiskapkentry.grid_forget(),
+            magiskarch.grid_forget(),
+            ) if not self.patch_magisk.get() else ( # 你在点的时候是函数还是没变的，所以反着来
+                magiskapkentry.grid(column=0, row=3, padx=5, pady=5, sticky='nsew', columnspan=2),
+                magiskarch.grid(column=0, row=2, padx=5, pady=5, sticky='nsew', columnspan=2)
+            ))
+        buttonmagisk.grid(column=0, row=1, padx=5, pady=5, sticky='w')
         buttonlabel.pack(side='top', padx=5, pady=5, fill='x', expand='yes')
 
         optframe.pack(side='left', padx=5, pady=5, fill='y', expand='no')

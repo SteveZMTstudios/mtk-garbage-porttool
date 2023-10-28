@@ -12,8 +12,11 @@ from hashlib import md5
 from .bootimg import unpack_bootimg, repack_bootimg
 from .imgextractor import Extractor
 from .configs import (
-    make_ext4fs_bin
+    make_ext4fs_bin,
+    magiskboot_bin
 )
+
+from .boot_patch import BootPatcher, parseMagiskApk
 
 if osname == 'nt':
     from ctypes import windll, wintypes
@@ -335,6 +338,12 @@ class portutils:
         outboot = Path(portdir.joinpath("boot-new.img"))
         to = Path("tmp/rom/boot.img")
         __replace(outboot, to)
+        # patch with magisk
+        if item['patch_magisk']:
+            parseMagiskApk(item['magisk_apk'], item['target_arch'], self.std)
+            bp = BootPatcher(magiskboot_bin, legacysar=True, progress=None, log=self.std)
+            bp.patch(str(to))
+            __replace(Path("new-boot.img"), to)
         return True
     
     def __port_system(self):

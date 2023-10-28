@@ -123,3 +123,4 @@ support_packtype = ['zip', 'img']
 ostype, arch = archdetect.retTypeAndMachine()
 ext_ext = '.exe' if ostype == 'win' else ''
 make_ext4fs_bin = op.join(getcwd(), "bin", ostype, arch, "make_ext4fs"+ext_ext)
+magiskboot_bin = op.join(getcwd(), "bin", ostype, arch, "magiskboot"+ext_ext)
