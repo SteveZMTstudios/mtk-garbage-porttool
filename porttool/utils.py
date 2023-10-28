@@ -2,7 +2,7 @@ import re
 from io import StringIO
 from pathlib import Path
 from zipfile import ZipFile, ZIP_DEFLATED
-from os import walk, getcwd, chdir, symlink, readlink, name as osname, stat
+from os import walk, getcwd, chdir, symlink, readlink, name as osname, stat, unlink
 import os.path as op
 from shutil import rmtree, copytree
 import lzma
@@ -339,13 +339,21 @@ class portutils:
         to = Path("tmp/rom/boot.img")
         __replace(outboot, to)
         # patch with magisk
-        if item['patch_magisk']:
-            parseMagiskApk(item['magisk_apk'], item['target_arch'], self.std)
-            bp = BootPatcher(magiskboot_bin, legacysar=True, progress=None, log=self.std)
-            bp.patch(str(to))
-            __replace(Path("new-boot.img"), to)
+        if self.items.get("patch_magisk"):
+            if op.isfile(self.items.get("magisk_apk")):
+                parseMagiskApk(self.items['magisk_apk'], self.items['target_arch'], self.std)
+                bp = BootPatcher(magiskboot_bin, legacysar=True, progress=None, log=self.std)
+                if not bp.patch(str(to)):
+                    bp.cleanup()
+                else:
+                    __replace(Path("new-boot.img"), to)
+                    unlink("new-boot.img")
+                
+            else:
+                print(f"找不到{self.items['magisk_apk']}", file=self.std)
+
         return True
-    
+
     def __port_system(self):
         def __replace(val: str):
             print(f"替换$base/{i} -> $port/{i}...", file=self.std)

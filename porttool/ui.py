@@ -125,6 +125,11 @@ class MyUI(ttk.Labelframe):
         for key, tkbool in self.item:
             newdict[key] = tkbool.get()
         
+        # magisk stuff
+        newdict['patch_magisk'] = self.patch_magisk.get()
+        newdict['magisk_apk'] = self.magisk_apk.get()
+        newdict['target_arch'] = self.target_arch.get()
+
         # start to port
         p = portutils(
             newdict, *files, True if self.pack_type.get() == 'img' else False,
