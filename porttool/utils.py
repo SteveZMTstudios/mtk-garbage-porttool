@@ -16,6 +16,9 @@ from .configs import (
     magiskboot_bin
 )
 
+from .sdat2img import main as sdat2img
+from .img2sdat import main as img2sdat
+
 from .boot_patch import BootPatcher, parseMagiskApk
 
 if osname == 'nt':
@@ -217,6 +220,9 @@ class portutils:
         if not self.__check_exist:
             print("文件是否存在检查不通过", file=self.std)
             return
+
+        # sdat
+        self.sdat = False
     
     @property
     def __check_exist(self) -> bool:
@@ -401,6 +407,15 @@ class portutils:
             Extractor().main(self.sysimg, "base/system")
             print("解包完成", file=self.std)
 
+        if Path("tmp/rom/system.new.dat").exists():
+            print("检测到system.new.dat格式镜像，需要转换", file=self.std)
+            self.sdat = True
+            with open("tmp/rom/system.transfer.list") as t:
+                self.sdat_ver = int(t.readline().rstrip("\n"))
+            sdat2img("tmp/rom/system.transfer.list", "tmp/rom/system.new.dat", "tmp/rom/system.img")
+            print("解包目标system镜像中...")
+            Extractor().main("tmp/rom/system.img", "tmp/rom")
+
         base_prefix = Path("base/system")
         port_prefix = Path("tmp/rom/system")
         for item in self.items['flags']:
@@ -494,10 +509,52 @@ class portutils:
         outpath = Path(f"out/{op.basename(self.portzip)}")
         if outpath.exists():
             outpath.unlink()
+
+        if self.sdat:
+            print("sdat格式打包...", file=self.std)
+            print("生成system镜像中...", file=self.std)
+            config_dir = Path("tmp/config")
+            if config_dir.exists():
+                rmtree(config_dir)
+            config_dir.mkdir(parents=True)
+
+            fit_size = self.__pack_fit_size()
+            sys_size = stat(self.sysimg).st_size
+            make_ext4fs_cmd = [
+                make_ext4fs_bin,
+                #'-s', # sparse image
+                '-J', # has journal
+                '-T', '1', # custom mtime
+                '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
+                '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
+                '-S', f"{str(config_dir.joinpath('system_file_contexts'))}",
+                '-L', 'system', '-a', 'system',
+                "out/system.img", "tmp/rom/system",
+            ]
+            self.execv(make_ext4fs_cmd, verbose=True)
+            
+            if op.isdir("tmp/rom/system"):
+                rmtree("tmp/rom/system")
+            if op.isdir("tmp/rom/config"):
+                rmtree("tmp/rom/config")
+            if op.isfile("tmp/rom/system.transfer.list"):
+                unlink("tmp/rom/system.transfer.list")
+            
+            img2sdat("tmp/rom/system.img", "tmp/rom", self.sdat_ver)
+            if op.isfile("tmp/rom/system.img"):
+                print("删除遗留system镜像...", file=self.std)
+                rmtree("tmp/rom/system.img")
         ziputil.compress(str(outpath), "tmp/rom/")
         print("完成！", file=self.std)
         return
     
+    def __pack_fit_size(self):
+            total = 0
+            for root, dirs, files in walk("tmp/rom/system"):
+                for file in files:
+                    total += stat(op.join(root, file)).st_size
+            return total * 1.2
+
     def __pack_img(self):
         def __readlink(dest: str):
             if osname == 'nt':
@@ -524,13 +581,6 @@ class portutils:
                         b"!<symlink>" + src.encode('utf-16') + b'\0\0')
                 setSystemAttrib(dest)
             else: symlink(src, dest)
-        
-        def __pack_fit_size():
-            total = 0
-            for root, dirs, files in walk("tmp/rom/system"):
-                for file in files:
-                    total += stat(op.join(root, file)).st_size
-            return total * 1.2
         
         print("将输出打包为system镜像", file=self.std)
         updater = Path("tmp/rom/META-INF/com/google/android/updater-script")
@@ -637,7 +687,7 @@ class portutils:
         fs_config.close()
         file_contexts.close()
 
-        fit_size = __pack_fit_size()
+        fit_size = self.__pack_fit_size()
         sys_size = stat(self.sysimg).st_size
         make_ext4fs_cmd = [
             make_ext4fs_bin,
