@@ -119,6 +119,95 @@ support_chipset_portstep = {
             ],
         },
     },
+    'G79 (mt6735/mt6735m/mt6737) kernel-3.4.67': {
+        'partitions': {},
+        'flags': { # flag control in item
+            'generate_script': True, # Auto generate updater-script
+            # ========== split line ============ 
+            'replace_kernel': True, # startwith replace will replace file
+            'replace_fstab': False,
+            'selinux_permissive': True,
+            'enable_adb': True,
+            # ========== split line ============ ↑ is boot.img ↓ is system
+            'replace_firmware': True,
+            'replace_mddb': True,
+            'replace_malidriver': False,
+            'replace_audiodriver': False,
+            'replace_libshowlogo': False,
+            'replace_mtk-kpd': False,
+            'replace_wifi': False,
+            'replace_camera': False,
+            'single_simcard': False,
+            'dual_simcard': False,
+            'fit_density': True,
+            'change_model': True,
+            'change_timezone': True,
+            'change_locale': True,
+            'use_custom_update-binary': True,
+        },
+        'replace': { # if you flags startswith replace_ you must define which files need to be replace
+            'kernel': [ # boot from base -> port
+                "kernel",
+                # commonly not compressed by gz at mt6572 etc
+                #"kernel.gz",
+            ],
+            'fstab': [  # boot from base -> port
+                "initrd/fstab",
+                "initrd/fstab.mt6735",
+                "initrd/fstab.mt6737",
+            ],
+            'firmware': [ # below is system
+                "etc/firmware" # if is a directory, will remove first
+            ],
+            'mddb': [
+                "etc/mddb"
+            ],
+            'malidriver': [
+                "lib/libMali.so"
+            ],
+            'audiodriver': [
+                "lib/hw/audio.primary.mt6735.so",
+                "lib/hw/audio.primary.mt6735m.so",
+                "lib/hw/audio.primary.mt6737.so",
+                "lib/hw/audio.primary.mt6737m.so",
+            ],
+            'libshowlogo': [
+                "lib/libshowlogo.so"
+            ],
+            'mtk-kpd': [
+                "usr/keylayout/mtk-kpd.kl"
+            ],
+            'wifi': [
+                "bin/netcfg",
+                "bin/dhcpcd",
+                "bin/ifconfig",
+                "bin/hostap",
+                "bin/hostapd",
+                "bin/hostapd_bin",
+                "bin/pcscd",
+                "bin/wlan*",
+                # "bin/wpa*",
+                "bin/netd",
+                "lib/libhardwarelegacy.so",
+                "etc/wifi",
+            ],
+            'camera': [
+                "lib/lib3a.so",
+                "lib/libcamalgo.so",
+                "lib/libcamdrv.so",
+                "lib/libcameracustom.so",
+                "lib/libfeatureio.so",
+                "lib/libimageio.so",
+                "lib/libimageio_plat_drv.so",
+                "lib/libJpgDecPipe.so",
+                "lib/libJpgEncPipe.so",
+                "lib/libmhalImageCodec.so",
+                "lib/libmtkcamera_client.so",
+                "lib/libmtkjpeg.so",
+                "lib/libcam.paramsmgr.so",
+            ]
+        },
+    },
 }
 
 if op.isfile("configs.json"):
