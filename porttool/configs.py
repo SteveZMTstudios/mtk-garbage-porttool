@@ -119,7 +119,7 @@ support_chipset_portstep = {
             ],
         },
     },
-    'G79 (mt6735/mt6735m/mt6737) kernel-3.4.67': {
+    'G79 (mt6735/mt6735m/mt6737) kernel-3.18.19': {
         'partitions': {},
         'flags': { # flag control in item
             'generate_script': False, # Auto generate updater-script
