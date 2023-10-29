@@ -392,6 +392,7 @@ class portutils:
             readmd5 = md5fd.readline().rstrip()
         md5fd.close()
         if sysmd5 == readmd5:
+            unpack_flag = False
             print("检测到system已经解包，无需二次解包以减少移植时间", file=self.std)
         else:
             unpack_flag = True
