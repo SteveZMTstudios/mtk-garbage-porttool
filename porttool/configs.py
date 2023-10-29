@@ -122,7 +122,7 @@ support_chipset_portstep = {
     'G79 (mt6735/mt6735m/mt6737) kernel-3.4.67': {
         'partitions': {},
         'flags': { # flag control in item
-            'generate_script': True, # Auto generate updater-script
+            'generate_script': False, # Auto generate updater-script
             # ========== split line ============ 
             'replace_kernel': True, # startwith replace will replace file
             'replace_fstab': False,
