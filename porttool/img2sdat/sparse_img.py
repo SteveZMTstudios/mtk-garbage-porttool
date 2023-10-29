@@ -73,7 +73,7 @@ class SparseImage(object):
 
     for i in range(total_chunks):
       header_bin = f.read(12)
-      header = struct.unpack("<2H2I", header_bin)
+      header = struct.unpack("<2H2I", header_bin[0:12])
       chunk_type = header[0]
       chunk_sz = header[2]
       total_sz = header[3]

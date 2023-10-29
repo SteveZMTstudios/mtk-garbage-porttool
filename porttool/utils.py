@@ -13,7 +13,9 @@ from .bootimg import unpack_bootimg, repack_bootimg
 from .imgextractor import Extractor
 from .configs import (
     make_ext4fs_bin,
-    magiskboot_bin
+    magiskboot_bin,
+    img2simg_bin,
+    simg2img_bin
 )
 
 from .sdat2img import main as sdat2img
@@ -415,7 +417,7 @@ class portutils:
                 self.sdat_ver = int(t.readline().rstrip("\n"))
             sdat2img("tmp/rom/system.transfer.list", "tmp/rom/system.new.dat", "tmp/rom/system.img")
             print("解包目标system镜像中...")
-            Extractor().main("tmp/rom/system.img", "tmp/rom")
+            Extractor().main("tmp/rom/system.img", "tmp/rom/system")
 
         base_prefix = Path("base/system")
         port_prefix = Path("tmp/rom/system")
@@ -490,22 +492,24 @@ class portutils:
                         Path("bin/update-binary").read_bytes())
                 case 'generate_script':
                     print("自动重新生成刷机脚本解决一些莫名奇妙的问题...", file=self.std)
-                    updater = Path("tmp/rom/META-INF/com/google/android/updater-script")
-                    if updater.exists():
-                        with updater.open('r+', encoding='utf-8', newline='\n') as f:
-                            # try to get author
-                            author = self.items.get('author')
-                            version = self.items.get('version')
-                            if not author: author = tool_author
-                            if not version: version = tool_version
-                            new_script = updaterutil(f).generate(author, version, self.items['partitions'])
-                            if new_script:
-                                f.seek(0, 0)
-                                f.truncate()
-                                f.write(new_script)
-                                print("脚本生成成功...", file=self.std)
-                            else: print("脚本生成错误...", file=self.std)
-                    else: print("刷机脚本未找到...", file=self.std)
+                    if (not self.sdat) or (len(self.items['partitions']) != 0):
+                        updater = Path("tmp/rom/META-INF/com/google/android/updater-script")
+                        if updater.exists():
+                            with updater.open('r+', encoding='utf-8', newline='\n') as f:
+                                # try to get author
+                                author = self.items.get('author')
+                                version = self.items.get('version')
+                                if not author: author = tool_author
+                                if not version: version = tool_version
+                                new_script = updaterutil(f).generate(author, version, self.items['partitions'])
+                                if new_script:
+                                    f.seek(0, 0)
+                                    f.truncate()
+                                    f.write(new_script)
+                                    print("脚本生成成功...", file=self.std)
+                                else: print("脚本生成错误...", file=self.std)
+                        else: print("刷机脚本未找到...", file=self.std)
+                    else: print("刷机包可能是sdat格式或者你的partitions里没指定system和boot", file=self.std)
         print("打包卡刷包.....", end='', file=self.std)
         outpath = Path(f"out/{op.basename(self.portzip)}")
         if outpath.exists():
@@ -514,26 +518,77 @@ class portutils:
         if self.sdat:
             print("sdat格式打包...", file=self.std)
             print("生成system镜像中...", file=self.std)
-            config_dir = Path("tmp/config")
-            if config_dir.exists():
-                rmtree(config_dir)
-            config_dir.mkdir(parents=True)
+            config_dir = Path("tmp/rom/config")
+            #if config_dir.exists():
+            #    rmtree(config_dir)
+            #config_dir.mkdir(parents=True)
+
+            # 去重
+            with config_dir.joinpath("system_file_contexts").open('r+') as fc:
+                fc_info = [i.rstrip() for i in iter(fc.readline, "")]
+                new_fc_info = []
+                for i in fc_info:
+                    if not i in new_fc_info:
+                        new_fc_info.append(i)
+                fc.seek(0, 0)
+                fc.truncate(0)
+                fc.write("\n".join(new_fc_info))
+
+            fs_label = []
+            fs_label.append(
+                ["/", '0', '0', '0755'])
+            fs_label.append(
+                ["/lost\\+found", '0', '0', '0700'])
+            print("添加缺失的文件和权限", file=self.std)
+            fs_files = [i[0] for i in fs_label]
+            for root, dirs, files in walk("tmp/rom/system"):
+                if "tmp/install" in root.replace('\\', '/'): continue # skip lineage spec
+                for dir in dirs:
+                    unix_path = op.join(
+                        op.join("/system", op.relpath(op.join(root, dir), "tmp/rom/system")).replace("\\", "/")
+                    ).replace("[", "\\[")
+                    if not unix_path in fs_files:
+                        fs_label.append([unix_path.lstrip('/'), '0', '0', '0755'])
+                for file in files:
+                    unix_path = op.join(
+                        op.join("/system", op.relpath(op.join(root, file), "tmp/rom/system")).replace("\\", "/")
+                    ).replace("[", "\\[")
+                    if not unix_path in fs_files:
+                        link = self.__readlink(op.join(root, file))
+                        if link:
+                            fs_label.append(
+                                [unix_path.lstrip('/'), '0', '2000', '0755', link])
+                        else:
+                            if "bin/" in unix_path:
+                                mode = '0755'
+                            else: mode = '0644'
+                            fs_label.append(
+                                [unix_path.lstrip('/'), '0', '2000', mode])
+            fs_config = config_dir.joinpath("system_fs_config").open('w', newline='\n')
+            fs_label.sort()
+            for fs in fs_label:
+                fs_config.write(" ".join(fs)+'\n')
+            fs_config.close()
 
             fit_size = self.__pack_fit_size()
             sys_size = stat(self.sysimg).st_size
+
             make_ext4fs_cmd = [
                 make_ext4fs_bin,
-                #'-s', # sparse image
+                '-s', # sparse image
                 '-J', # has journal
                 '-T', '1', # custom mtime
                 '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
                 '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
                 '-S', f"{str(config_dir.joinpath('system_file_contexts'))}",
                 '-L', 'system', '-a', 'system',
-                "out/system.img", "tmp/rom/system",
+                "out/system_raw.img", "tmp/rom/system",
             ]
             self.execv(make_ext4fs_cmd, verbose=True)
-            
+
+            # convert to simg
+            self.execv([img2simg_bin, "out/system_raw.img", "out/system.img"])
+
             if op.isdir("tmp/rom/system"):
                 rmtree("tmp/rom/system")
             if op.isdir("tmp/rom/config"):
@@ -541,10 +596,10 @@ class portutils:
             if op.isfile("tmp/rom/system.transfer.list"):
                 unlink("tmp/rom/system.transfer.list")
             
-            img2sdat("tmp/rom/system.img", "tmp/rom", self.sdat_ver)
+            img2sdat("out/system.img", "tmp/rom", self.sdat_ver)
             if op.isfile("tmp/rom/system.img"):
                 print("删除遗留system镜像...", file=self.std)
-                rmtree("tmp/rom/system.img")
+                unlink("tmp/rom/system.img")
         ziputil.compress(str(outpath), "tmp/rom/")
         print("完成！", file=self.std)
         return
@@ -556,18 +611,18 @@ class portutils:
                     total += stat(op.join(root, file)).st_size
             return total * 1.2
 
-    def __pack_img(self):
-        def __readlink(dest: str):
-            if osname == 'nt':
-                with open(dest, 'rb') as f:
-                    if f.read(10) == b'!<symlink>':
-                        return f.read().decode('utf-16').rstrip('\0')
-                    else: return None
-            else:
-                try:
-                    readlink(dest)
-                except: return None
+    def __readlink(self, dest: str):
+        if osname == 'nt':
+            with open(dest, 'rb') as f:
+                if f.read(10) == b'!<symlink>':
+                    return f.read().decode('utf-16').rstrip('\0')
+                else: return None
+        else:
+            try:
+                readlink(dest)
+            except: return None
 
+    def __pack_img(self):
         def __symlink(src: str, dest: str):
             def setSystemAttrib(path: str) -> wintypes.BOOL:
                 return windll.kernel32.SetFileAttributesA(path.encode('gb2312'), wintypes.DWORD(0x4))
@@ -665,7 +720,7 @@ class portutils:
                     op.join("/system", op.relpath(op.join(root, file), "tmp/rom/system")).replace("\\", "/")
                 ).replace("[", "\\[")
                 if not unix_path in fs_files:
-                    link = __readlink(op.join(root, file))
+                    link = self.__readlink(op.join(root, file))
                     if link:
                         fs_label.append(
                             [unix_path.lstrip('/'), '0', '2000', '0755', link])
