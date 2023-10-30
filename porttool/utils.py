@@ -366,21 +366,22 @@ class portutils:
     def __port_system(self):
         def __replace(val: str):
             print(f"替换$base/{val} -> $port/{val}...", file=self.std)
-            if base_prefix.joinpath(val).is_dir():
+            if "*" in val: # 匹配通配符
+                for file in glob.glob(op.join(str(base_prefix), val)):
+                    relfile = op.relpath(file, str(base_prefix))
+                    print(f"\t$base/{relfile} -> $port/{relfile}", file=self.std)
+                    port_prefix.joinpath(relfile).write_bytes(
+                        base_prefix.joinpath(relfile).read_bytes()
+                    )
+            elif base_prefix.joinpath(val).is_dir():
                 if port_prefix.joinpath(val).exists():
                     rmtree(port_prefix.joinpath(val))
                 copytree(base_prefix.joinpath(val),
                          port_prefix.joinpath(val))
             else:
-                if "*" in val: # 匹配通配符
-                    for file in glob.glob(base_prefix.join(val)):
-                        port_prefix.joinpath(file).write_bytes(
-                            base_prefix.joinpath(file).read_bytes()
-                        )
-                else:
-                    port_prefix.joinpath(val).write_bytes(
-                        base_prefix.joinpath(val).read_bytes()
-                    )
+                port_prefix.joinpath(val).write_bytes(
+                    base_prefix.joinpath(val).read_bytes()
+                )
 
         unpack_flag = False
         print("检测system md5检验和是否相同", file=self.std)

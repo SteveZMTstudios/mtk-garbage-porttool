@@ -186,9 +186,9 @@ support_chipset_portstep = {
                 "bin/hostapd_bin",
                 "bin/pcscd",
                 "bin/wlan*",
-                # "bin/wpa*",
+                "bin/wpa*",
                 "bin/netd",
-                "lib/libhardwarelegacy.so",
+                "lib/libhardware_legacy.so",
                 "etc/wifi",
             ],
             'camera': [
