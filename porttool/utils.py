@@ -22,6 +22,7 @@ from .sdat2img import main as sdat2img
 from .img2sdat import main as img2sdat
 
 from .boot_patch import BootPatcher, parseMagiskApk
+import glob
 
 if osname == 'nt':
     from ctypes import windll, wintypes
@@ -364,16 +365,22 @@ class portutils:
 
     def __port_system(self):
         def __replace(val: str):
-            print(f"替换$base/{i} -> $port/{i}...", file=self.std)
-            if base_prefix.joinpath(i).is_dir():
-                if port_prefix.joinpath(i).exists():
-                    rmtree(port_prefix.joinpath(i))
-                copytree(base_prefix.joinpath(i),
-                         port_prefix.joinpath(i))
+            print(f"替换$base/{val} -> $port/{val}...", file=self.std)
+            if base_prefix.joinpath(val).is_dir():
+                if port_prefix.joinpath(val).exists():
+                    rmtree(port_prefix.joinpath(val))
+                copytree(base_prefix.joinpath(val),
+                         port_prefix.joinpath(val))
             else:
-                port_prefix.joinpath(i).write_bytes(
-                    base_prefix.joinpath(i).read_bytes()
-                )
+                if "*" in val: # 匹配通配符
+                    for file in glob.glob(base_prefix.join(val)):
+                        port_prefix.joinpath(file).write_bytes(
+                            base_prefix.joinpath(file).read_bytes()
+                        )
+                else:
+                    port_prefix.joinpath(val).write_bytes(
+                        base_prefix.joinpath(val).read_bytes()
+                    )
 
         unpack_flag = False
         print("检测system md5检验和是否相同", file=self.std)
