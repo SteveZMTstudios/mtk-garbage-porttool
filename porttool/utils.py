@@ -423,7 +423,7 @@ class portutils:
             with open("tmp/rom/system.transfer.list") as t:
                 self.sdat_ver = int(t.readline().rstrip("\n"))
             sdat2img("tmp/rom/system.transfer.list", "tmp/rom/system.new.dat", "tmp/rom/system.img")
-            print("解包目标system镜像中...")
+            print("解包目标system镜像中...", file=self.std)
             Extractor().main("tmp/rom/system.img", "tmp/rom/system")
 
         base_prefix = Path("base/system")
@@ -435,7 +435,7 @@ class portutils:
                 continue
             if item.startswith("replace_"):
                 for i in self.items['replace'][item.split('_')[1]]:
-                    if base_prefix.joinpath(i).exists():
+                    if base_prefix.joinpath(i).exists() or ("*" in i):
                         __replace(i)
                     else:
                         print(f"Warning: {i} 在底包中没有找到，这也许不是什么大问题", file=self.std)
