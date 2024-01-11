@@ -18,7 +18,6 @@ import copy
 import errno
 import getopt
 import getpass
-import imp
 import os
 import platform
 import re
@@ -34,7 +33,6 @@ import zipfile
 from . import blockimgdiff
 
 from hashlib import sha1 as sha1
-
 
 class Options(object):
   def __init__(self):
@@ -1102,92 +1100,6 @@ def ZipClose(zip_file):
   zip_file.close()
 
   zipfile.ZIP64_LIMIT = saved_zip64_limit
-
-
-class DeviceSpecificParams(object):
-  module = None
-  def __init__(self, **kwargs):
-    """Keyword arguments to the constructor become attributes of this
-    object, which is passed to all functions in the device-specific
-    module."""
-    for k, v in kwargs.iteritems():
-      setattr(self, k, v)
-    self.extras = OPTIONS.extras
-
-    if self.module is None:
-      path = OPTIONS.device_specific
-      if not path:
-        return
-      try:
-        if os.path.isdir(path):
-          info = imp.find_module("releasetools", [path])
-        else:
-          d, f = os.path.split(path)
-          b, x = os.path.splitext(f)
-          if x == ".py":
-            f = b
-          info = imp.find_module(f, [d])
-        print("loaded device-specific extensions from", path)
-        self.module = imp.load_module("device_specific", *info)
-      except ImportError:
-        print("unable to load device-specific module; assuming none")
-
-  def _DoCall(self, function_name, *args, **kwargs):
-    """Call the named function in the device-specific module, passing
-    the given args and kwargs.  The first argument to the call will be
-    the DeviceSpecific object itself.  If there is no module, or the
-    module does not define the function, return the value of the
-    'default' kwarg (which itself defaults to None)."""
-    if self.module is None or not hasattr(self.module, function_name):
-      return kwargs.get("default", None)
-    return getattr(self.module, function_name)(*((self,) + args), **kwargs)
-
-  def FullOTA_Assertions(self):
-    """Called after emitting the block of assertions at the top of a
-    full OTA package.  Implementations can add whatever additional
-    assertions they like."""
-    return self._DoCall("FullOTA_Assertions")
-
-  def FullOTA_InstallBegin(self):
-    """Called at the start of full OTA installation."""
-    return self._DoCall("FullOTA_InstallBegin")
-
-  def FullOTA_InstallEnd(self):
-    """Called at the end of full OTA installation; typically this is
-    used to install the image for the device's baseband processor."""
-    return self._DoCall("FullOTA_InstallEnd")
-
-  def IncrementalOTA_Assertions(self):
-    """Called after emitting the block of assertions at the top of an
-    incremental OTA package.  Implementations can add whatever
-    additional assertions they like."""
-    return self._DoCall("IncrementalOTA_Assertions")
-
-  def IncrementalOTA_VerifyBegin(self):
-    """Called at the start of the verification phase of incremental
-    OTA installation; additional checks can be placed here to abort
-    the script before any changes are made."""
-    return self._DoCall("IncrementalOTA_VerifyBegin")
-
-  def IncrementalOTA_VerifyEnd(self):
-    """Called at the end of the verification phase of incremental OTA
-    installation; additional checks can be placed here to abort the
-    script before any changes are made."""
-    return self._DoCall("IncrementalOTA_VerifyEnd")
-
-  def IncrementalOTA_InstallBegin(self):
-    """Called at the start of incremental OTA installation (after
-    verification is complete)."""
-    return self._DoCall("IncrementalOTA_InstallBegin")
-
-  def IncrementalOTA_InstallEnd(self):
-    """Called at the end of incremental OTA installation; typically
-    this is used to install the image for the device's baseband
-    processor."""
-    return self._DoCall("IncrementalOTA_InstallEnd")
-
-  def VerifyOTA_Assertions(self):
-    return self._DoCall("VerifyOTA_Assertions")
 
 class File(object):
   def __init__(self, name, data):
