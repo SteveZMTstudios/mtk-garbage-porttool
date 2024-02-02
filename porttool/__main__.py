@@ -27,4 +27,8 @@ def main():
         root.tk.call('tk', 'scaling', scalefactor / 75)
 
     root.update()
+    try:
+        root.iconbitmap("logo.ico")
+    except (Exception or BaseException):
+        ...
     root.mainloop()
