@@ -177,8 +177,8 @@ class MyUI(ttk.Labelframe):
         optmenu = ttk.OptionMenu(optlabel, self.chipset_select, support_chipset[0], *support_chipset,
                                  command=__load_port_item)
 
-        opttext.pack(side='left', padx=5, pady=5, expand='no')
-        optmenu.pack(side='left', fill='x', padx=5, pady=5, expand='no')
+        opttext.pack(side='left', padx=5, pady=5, expand=False)
+        optmenu.pack(side='left', fill='x', padx=5, pady=5, expand=False)
 
         optlabel.pack(side='top', fill='x')
 
@@ -194,14 +194,14 @@ class MyUI(ttk.Labelframe):
         actcanvas.bind("<MouseWheel>", __scroll_event)
 
         actscroll.pack(side='right', fill='y')
-        actcanvas.pack(side='right', fill='x', expand='yes', anchor='e')
-        actframe.pack(side='top', fill='x', expand='yes')
+        actcanvas.pack(side='right', fill='x', expand=True, anchor='e')
+        actframe.pack(side='top', fill='x', expand=True)
         __create_cv_frame()
 
         # label of buttons
         buttonlabel = ttk.Label(optframe)
         buttonport = ttk.Button(optframe, text="一键移植", command=self.__start_port)
-        buttonport.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
+        buttonport.pack(side='top', fill='both', padx=5, pady=5, expand=True)
         buttoncheck1 = ttk.Checkbutton(buttonlabel, text="输出为zip卡刷包", variable=self.pack_type, onvalue='zip',
                                        offvalue='img')
         buttoncheck2 = ttk.Checkbutton(buttonlabel, text="输出为img镜像", variable=self.pack_type, onvalue='img',
@@ -224,14 +224,14 @@ class MyUI(ttk.Labelframe):
                 magiskarch.grid(column=0, row=2, padx=5, pady=5, sticky='nsew', columnspan=2)
             ))
         buttonmagisk.grid(column=0, row=1, padx=5, pady=5, sticky='w')
-        buttonlabel.pack(side='top', padx=5, pady=5, fill='x', expand='yes')
+        buttonlabel.pack(side='top', padx=5, pady=5, fill='x', expand=True)
 
-        optframe.pack(side='left', padx=5, pady=5, fill='y', expand='no')
+        optframe.pack(side='left', padx=5, pady=5, fill='y', expand=False)
         # log label
         logframe = ttk.Labelframe(self, text="日志输出")
         self.log = scrolledtext.ScrolledText(logframe)
         sys.stderr = StdoutRedirector(self.log)
         sys.stdout = StdoutRedirector(self.log)
         self.log.pack(side='left', fill='both', anchor='center')
-        logframe.pack(side='left', padx=5, pady=5, fill='both', expand='yes')
+        logframe.pack(side='left', padx=5, pady=5, fill='both', expand=True)
         __load_port_item(self.chipset_select.get())
