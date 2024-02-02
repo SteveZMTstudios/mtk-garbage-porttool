@@ -6,10 +6,10 @@ from tkinter import (
     scrolledtext,
     StringVar,
     BooleanVar,
-    Canvas,
+    Canvas, END,
 )
 from tkinter.filedialog import askopenfilename
-
+import sys
 from .configs import *
 from .utils import portutils
 
@@ -82,23 +82,16 @@ class FileChooser(Toplevel):
         ]
 
 
-class LogLabel(scrolledtext.ScrolledText):
-    def __init__(self, parent):
-        super().__init__(parent)
-        # self.vars = []
+class StdoutRedirector:
+    def __init__(self, text_widget):
+        self.text_space = text_widget
 
-    def write(self, *vars, end='\n'):
-        # self.vars = []
-        for i in vars:
-            self.insert('end', i)
-            # self.vars.append(i)
-        # self.insert('end', end)
-        self.see('end')
+    def write(self, string):
+        self.text_space.insert(END, string)
+        self.text_space.yview('end')
 
-    def flush(self): pass  # have no idea how to flush on text widget
-
-    def print(self, *vars, end='\n'):
-        print(vars, end=end, file=self)
+    def flush(self):
+        ...
 
 
 class MyUI(ttk.Labelframe):
@@ -118,16 +111,16 @@ class MyUI(ttk.Labelframe):
     def __start_port(self):
         # item check not 0
         if self.item.__len__() == 0:
-            print("Error: 移植条目为0，请先加载移植条目！", file=self.log)
+            print("Error: 移植条目为0，请先加载移植条目！")
             return
         files = boot, system, portzip = FileChooser(self).get()
         for i in boot, system, portzip:
             if not Path(i).exists() or i == '':
-                print(f"文件{i}未选择或不存在", file=self.log)
+                print(f"文件{i}未选择或不存在")
                 return
         print(f"底包boot路径为：{boot}\n"
               f"底包system镜像路径为：{system}\n"
-              f"移植包路径为：{portzip}", file=self.log)
+              f"移植包路径为：{portzip}")
         # config items
         newdict = support_chipset_portstep[self.chipset_select.get()]
         for key, tkbool in self.item:
@@ -162,7 +155,7 @@ class MyUI(ttk.Labelframe):
         def __load_port_item(select):
 
             # select = self.chipset_select.get()
-            print(f"选中移植方案为{select}...", file=self.log)
+            print(f"选中移植方案为{select}...")
             item = support_chipset_portstep[select]['flags']
             # Destory last items
             self.item = []
@@ -238,7 +231,9 @@ class MyUI(ttk.Labelframe):
         optframe.pack(side='left', padx=5, pady=5, fill='y', expand='no')
         # log label
         logframe = ttk.Labelframe(self, text="日志输出")
-        self.log = LogLabel(logframe)
+        self.log = scrolledtext.ScrolledText(logframe)
+        sys.stderr = StdoutRedirector(self.log)
+        sys.stdout = StdoutRedirector(self.log)
         self.log.pack(side='left', fill='both', anchor='center')
         logframe.pack(side='left', padx=5, pady=5, fill='both', expand='yes')
         __load_port_item(self.chipset_select.get())
