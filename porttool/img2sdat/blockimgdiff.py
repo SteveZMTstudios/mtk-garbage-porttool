@@ -23,10 +23,11 @@ import os
 from re import sub
 from subprocess import call, STDOUT
 from tempfile import mkstemp
-from threading import Lock,Thread
+from threading import Lock, Thread
 from collections import deque, OrderedDict
 from hashlib import sha1
-from .rangelib import RangeSet
+from porttool.img2sdat.rangelib import RangeSet
+
 
 __all__ = ["EmptyImage", "DataImage", "BlockImageDiff"]
 
@@ -57,8 +58,8 @@ def compute_patch(src, tgt, imgdiff=False):
             pass
         if imgdiff:
             p = call(["imgdiff", "-z", srcfile, tgtfile, patchfile],
-                                stdout=open("/dev/null", "a"),
-                                stderr=STDOUT)
+                     stdout=open("/dev/null", "a"),
+                     stderr=STDOUT)
         else:
             p = call(["bsdiff", srcfile, tgtfile, patchfile])
 
