@@ -48,27 +48,27 @@ def write_bootimg(output, kernel, ramdisk, second,
 
     if not isinstance(base, int):
         base = 0x10000000  # 0x00200000?
-        sys.stderr.write('base is %s, using default base instead.\n' % type(base))
+        print('base is %s, using default base instead.\n' % type(base))
 
     if not isinstance(ramdisk_addr, int):
         ramdisk_addr = base + 0x01000000
-        sys.stderr.write('ramdisk_addr is %s, using default ramdisk_addr instead.\n' % type(ramdisk_addr))
+        print('ramdisk_addr is %s, using default ramdisk_addr instead.\n' % type(ramdisk_addr))
 
     if not isinstance(second_addr, int):
         second_addr = base + 0x00F00000
-        sys.stderr.write('second_addr is %s, using default second_addr instead.\n' % type(second_addr))
+        print('second_addr is %s, using default second_addr instead.\n' % type(second_addr))
 
     if not isinstance(tags_addr, int):
         tags_addr = base + 0x00000100
-        sys.stderr.write('tags_addr is %s, using default tags_addr instead.\n' % type(tags_addr))
+        print('tags_addr is %s, using default tags_addr instead.\n' % type(tags_addr))
 
     if not isinstance(page_size, int):
         page_size = 0x800
-        sys.stderr.write('page_size is %s, using default page_size instead.\n' % type(page_size))
+        print('page_size is %s, using default page_size instead.\n' % type(page_size))
 
     if not isinstance(padding_size, int):
         padding_size = 0x800  # 0x1000?
-        sys.stderr.write('padding_size is %s, using default padding_size instead.\n' % type(padding_size))
+        print('padding_size is %s, using default padding_size instead.\n' % type(padding_size))
 
     if not hasattr(output, 'write'):
         output = sys.stdout
@@ -152,22 +152,22 @@ def parse_bootimg(bootimg):
     base = kernel_addr - 0x00008000
     assert magic.decode('latin') == 'ANDROID!', 'invald bootimg'
     if not base == ramdisk_addr - 0x01000000:
-        sys.stderr.write('found nonstandard ramdisk_addr\n')
+        print('found nonstandard ramdisk_addr\n')
     if not base == second_addr - 0x00f00000:
-        sys.stderr.write('found nonstandard second_addr\n')
+        print('found nonstandard second_addr\n')
     if not base == tags_addr - 0x00000100:
-        sys.stderr.write('found nonstandard tags_addr\n')
+        print('found nonstandard tags_addr\n')
     if dt_size:
-        sys.stderr.write('found device_tree_image\n')
+        print('found device_tree_image\n')
     cmdline = cmdline[:cmdline.find(b'\x00')]
 
-    sys.stderr.write('base: 0x%x\n' % base)
-    sys.stderr.write('ramdisk_addr: 0x%x\n' % ramdisk_addr)
-    sys.stderr.write('second_addr: 0x%x\n' % second_addr)
-    sys.stderr.write('tags_addr: 0x%x\n' % tags_addr)
-    sys.stderr.write('page_size: %d\n' % page_size)
-    sys.stderr.write('name: "%s"\n' % name.decode('latin').strip('\x00'))
-    sys.stderr.write('cmdline: "%s"\n' % cmdline.decode('latin').strip('\x00'))
+    print('base: 0x%x\n' % base)
+    print('ramdisk_addr: 0x%x\n' % ramdisk_addr)
+    print('second_addr: 0x%x\n' % second_addr)
+    print('tags_addr: 0x%x\n' % tags_addr)
+    print('page_size: %d\n' % page_size)
+    print('name: "%s"\n' % name.decode('latin').strip('\x00'))
+    print('cmdline: "%s"\n' % cmdline.decode('latin').strip('\x00'))
 
     bootinfo.write('base:0x%x\n' % base)
     bootinfo.write('ramdisk_addr:0x%x\n' % ramdisk_addr)
@@ -185,7 +185,7 @@ def parse_bootimg(bootimg):
         break
 
     padding = lambda x: (~x + 1) & (size - 1)
-    sys.stderr.write('padding_size=%d\n' % size)
+    print('padding_size=%d\n' % size)
 
     bootinfo.write('padding_size:0x%x\n' % size)
     bootinfo.close()
@@ -366,7 +366,7 @@ def write_cpio(cpiolist, output):
             tmp.close()
             output.write(padding(filesize, 4))
         else:
-            sys.stderr.write('not found file %s, skip it\n' % path)
+            print('not found file %s, skip it\n' % path)
 
     def cpio_mkdir(output, ino, name, mode='755', *kw):
         # if name == 'tmp':
@@ -382,13 +382,13 @@ def write_cpio(cpiolist, output):
         output.write(padding(filesize, 4))
 
     def cpio_mknod(output, ino, *kw):
-        sys.stderr.write('nod is not implemented\n')
+        print('nod is not implemented\n')
 
     def cpio_mkpipe(output, ino, *kw):
-        sys.stderr.write('pipe is not implemented\n')
+        print('pipe is not implemented\n')
 
     def cpio_mksock(output, ino, *kw):
-        sys.stderr.write('sock is not implemented\n')
+        print('sock is not implemented\n')
 
     def cpio_tailer(output, ino):
         name = 'TRAILER!!!'
@@ -419,7 +419,7 @@ def write_cpio(cpiolist, output):
         lines.pop(0)
         lines[0] = lines[0].replace(os.sep, '/')  # if any
         if lines[0] in files:
-            sys.stderr.write('ignore duplicate %s\n' % lines[0])
+            print('ignore duplicate %s\n' % lines[0])
             continue
         files.append(lines[0])
         function(output, next_inode, *lines)
@@ -427,7 +427,7 @@ def write_cpio(cpiolist, output):
 
     # for extra in ['/tmp', '/mnt']:
     #    if extra not in files:
-    #        sys.stderr.write('add extra %s\n' % extra)
+    #        print('add extra %s\n' % extra)
     #        cpio_mkdir(output, extra)
 
     cpio_tailer(output, next_inode)
@@ -583,20 +583,20 @@ def repack_bootimg(_base=None, _cmdline=None, _page_size=None, _padding_size=Non
         parse_bootinfo(bootinfo)
         bootinfo.close()
 
-    sys.stderr.write('arguments: [base] [cmdline] [page_size] [padding_size]\n')
-    sys.stderr.write('kernel: kernel\n')
-    sys.stderr.write('ramdisk: %s\n' % ramdisk)
-    sys.stderr.write('second: %s\n' % second)
-    sys.stderr.write('dt_image: %s\n' % dt_image)
-    sys.stderr.write('base: 0x%x\n' % base)
-    sys.stderr.write('ramdisk_addr: 0x%x\n' % ramdisk_addr)
-    sys.stderr.write('second_addr: 0x%x\n' % second_addr)
-    sys.stderr.write('tags_addr: 0x%x\n' % tags_addr)
-    sys.stderr.write('name: %s\n' % name)
-    sys.stderr.write('cmdline: %s\n' % cmdline)
-    sys.stderr.write('page_size: %d\n' % page_size)
-    sys.stderr.write('padding_size: %d\n' % padding_size)
-    sys.stderr.write('output: boot-new.img\n')
+    print('arguments: [base] [cmdline] [page_size] [padding_size]\n')
+    print('kernel: kernel\n')
+    print('ramdisk: %s\n' % ramdisk)
+    print('second: %s\n' % second)
+    print('dt_image: %s\n' % dt_image)
+    print('base: 0x%x\n' % base)
+    print('ramdisk_addr: 0x%x\n' % ramdisk_addr)
+    print('second_addr: 0x%x\n' % second_addr)
+    print('tags_addr: 0x%x\n' % tags_addr)
+    print('name: %s\n' % name)
+    print('cmdline: %s\n' % cmdline)
+    print('page_size: %d\n' % page_size)
+    print('padding_size: %d\n' % padding_size)
+    print('output: boot-new.img\n')
 
     tmp = open('boot.img.tmp', 'wb')
     options = {'base': base,
@@ -660,9 +660,9 @@ def unpack_bootimg(bootimg=None, ramdisk=None, directory=None):
         bootimg = 'boot.img'
         if os.path.exists('recovery.img') and not os.path.exists('boot.img'):
             bootimg = 'recovery.img'
-    sys.stderr.write('arguments: [bootimg file]\n')
-    sys.stderr.write('bootimg file: %s\n' % bootimg)
-    sys.stderr.write('output: kernel[.gz] ramdisk[.gz] second[.gz]\n')
+    print('arguments: [bootimg file]\n')
+    print('bootimg file: %s\n' % bootimg)
+    print('output: kernel[.gz] ramdisk[.gz] second[.gz]\n')
     parse_bootimg(open(bootimg, 'rb'))
 
     unpack_ramdisk(ramdisk, directory)
@@ -680,7 +680,7 @@ def check_mtk_head(imgfile, outinfofile):
     (tag,) = struct.unpack('<I', data)
 
     if tag == 0x58881688:
-        sys.stderr.write('Found mtk magic, skip header.\n')
+        print('Found mtk magic, skip header.\n')
         data = imgfile.read(0x4)
         (size1,) = struct.unpack('<I', data)
         assert len(data) == 0x4, 'bad imgfile'
@@ -691,7 +691,7 @@ def check_mtk_head(imgfile, outinfofile):
         data = imgfile.read(0x20)
         assert len(data) == 0x20, 'bad imgfile'
         (name,) = struct.unpack('32s', data)
-        sys.stderr.write('Found header name %s\n' % name)
+        print('Found header name %s\n' % name)
         outinfofile.write('mode:mtk\n')
         outinfofile.write('mtk_header_name:%s\n' % name.decode('latin').strip('\x00'))
         imgfile.seek(0x200, 0)
@@ -711,13 +711,13 @@ def try_add_head(imgfile, outfile, imginfofile, mode=None, name=None):
         for line in imginfofile.readlines():
             lines = line.split(':')
             if len(lines) < 1 or lines[0][0] == '#':
-                continue;
+                continue
             if lines[0].strip() == 'mode':
                 mode = lines[1].strip()
                 break
 
     if mode == 'mtk':
-        sys.stderr.write('mtk mode\n')
+        print('mtk mode\n')
         magic = 0x58881688
         off1 = imgfile.tell()
         imgfile.seek(0, 2)
@@ -728,10 +728,10 @@ def try_add_head(imgfile, outfile, imginfofile, mode=None, name=None):
         for line in imginfofile.readlines():
             lines = line.split(':')
             if len(lines) < 1 or lines[0][0] == '#':
-                continue;
+                continue
             if lines[0].strip() == 'mtk_header_name':
                 name = lines[1].strip()
-                break;
+                break
         data = struct.pack('<II32s472s', magic, size, name.encode(), b''.ljust(472, b'\xff'))
         outfile.write(data)
 
@@ -757,10 +757,10 @@ def unpack_ramdisk(ramdisk=None, directory=None):
     if directory is None:
         directory = 'initrd'
 
-    sys.stderr.write('arguments: [ramdisk file] [directory]\n')
-    sys.stderr.write('ramdisk file: %s\n' % ramdisk)
-    sys.stderr.write('directory: %s\n' % directory)
-    sys.stderr.write('output: cpiolist.txt\n')
+    print('arguments: [ramdisk file] [directory]\n')
+    print('ramdisk file: %s\n' % ramdisk)
+    print('directory: %s\n' % directory)
+    print('output: cpiolist.txt\n')
 
     if os.path.lexists(directory):
         raise SystemExit('please remove %s' % directory)
@@ -784,7 +784,7 @@ def unpack_ramdisk(ramdisk=None, directory=None):
         raise IOError('invalid ramdisk')
 
     cpiolist.write('compress_level:%d\n' % compress_level)
-    sys.stderr.write('compress: %s\n' % (compress_level > 0))
+    print('compress: %s\n' % (compress_level > 0))
     parse_cpio(cpio, directory, cpiolist)
 
 
@@ -792,9 +792,9 @@ def repack_ramdisk(cpiolist=None):
     if cpiolist is None:
         cpiolist = 'cpiolist.txt'
 
-    sys.stderr.write('arguments: [cpiolist file]\n')
-    sys.stderr.write('cpiolist file: %s\n' % cpiolist)
-    sys.stderr.write('output: ramdisk.cpio.gz\n')
+    print('arguments: [cpiolist file]\n')
+    print('cpiolist file: %s\n' % cpiolist)
+    print('output: ramdisk.cpio.gz\n')
 
     tmp = open('ramdisk.cpio.gz.tmp', 'wb')
     out = open('ramdisk.cpio.gz', 'wb')
@@ -808,7 +808,7 @@ def repack_ramdisk(cpiolist=None):
     for line in info.readlines():
         lines = line.split(':')
         if len(lines) < 1 or lines[0][0] == '#':
-            continue;
+            continue
         if lines[0].strip() == 'compress_level':
             compress_level = int(lines[1], 10)
             break
@@ -820,7 +820,7 @@ def repack_ramdisk(cpiolist=None):
         if compress_level > 9:
             compress_level = 9
         cpiogz = CPIOGZIP(None, 'wb', compress_level, tmp)
-    sys.stderr.write('compress_level: %d\n' % compress_level)
+    print('compress_level: %d\n' % compress_level)
     write_cpio(info, cpiogz)
     # cpiogz.close()
     tmp.close()
@@ -846,15 +846,15 @@ def repack_ramdisk(cpiolist=None):
 
 
 def showVersion():
-    sys.stderr.write('bootimg:\n')
-    sys.stderr.write('\tUpdate Date:20160601\n')
-    sys.stderr.write('\tModified:jpacg@vip.163.com\n')
+    print('bootimg:\n')
+    print('\tUpdate Date:20160601\n')
+    print('\tModified:jpacg@vip.163.com\n')
 
 
 def printErr(s):
     import sys
     type = sys.getfilesystemencoding()
-    sys.stderr.write(s.decode('utf-8').encode(type))
+    print(s.decode('utf-8').encode(type))
 
 
 if __name__ == '__main__':
@@ -869,10 +869,10 @@ if __name__ == '__main__':
 
     def usage():
         showVersion()
-        sys.stderr.write('supported arguments:')
-        sys.stderr.write('\n\t')
-        sys.stderr.write('\n\t'.join(sorted(functions.keys())))
-        sys.stderr.write('\n')
+        print('supported arguments:')
+        print('\n\t')
+        print('\n\t'.join(sorted(functions.keys())))
+        print('\n')
         raise SystemExit(1)
 
 
