@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 from tkinter import Tk
-from .ui import (
-    MyUI
-)
+from .ui import MyUI
 from os import name
 
 if name == 'nt':
