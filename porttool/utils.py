@@ -1,33 +1,32 @@
-import re
-from io import StringIO
-from pathlib import Path
-from zipfile import ZipFile, ZIP_DEFLATED
-from os import walk, getcwd, chdir, symlink, readlink, name as osname, stat, unlink
-import os.path as op
-from shutil import rmtree, copytree
+import glob
 import lzma
+import os.path as op
+import re
 import subprocess
-from sys import stdout
 from hashlib import md5
+from os import walk, getcwd, chdir, symlink, readlink, name as osname, stat, unlink
+from pathlib import Path
+from shutil import rmtree, copytree
+from sys import stdout
+from zipfile import ZipFile, ZIP_DEFLATED
+
+from .boot_patch import BootPatcher, parseMagiskApk
 from .bootimg import unpack_bootimg, repack_bootimg
-from .imgextractor import Extractor
 from .configs import (
     make_ext4fs_bin,
     magiskboot_bin,
-    img2simg_bin,
-    simg2img_bin
+    img2simg_bin
 )
-
-from .sdat2img import main as sdat2img
 from .img2sdat import main as img2sdat
-
-from .boot_patch import BootPatcher, parseMagiskApk
-import glob
+from .imgextractor import Extractor
+from .sdat2img import main as sdat2img
 
 if osname == 'nt':
     from ctypes import windll, wintypes
 
-tool_author = 'affggh'; tool_version = '1.1145141919810'
+tool_author = 'affggh'
+tool_version = '1.1145141919810'
+
 
 class proputil:
     def __init__(self, propfile: str):
@@ -49,12 +48,12 @@ class proputil:
         for i in self.prop:
             if i.startswith(key): return i.rstrip().split('=')[1]
         return None
-    
+
     def setprop(self, key, value) -> None:
-        flag: bool = False # maybe there is not only one item
+        flag: bool = False  # maybe there is not only one item
         for index, current in enumerate(self.prop):
             if key in current:
-                if not value: value = '' # wtf?
+                if not value: value = ''  # wtf?
                 self.prop[index] = current.split('=')[0] + '=' + value + '\n'
                 flag = True
         if not flag:
@@ -71,27 +70,31 @@ class proputil:
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb): # with proputil('build.prop') as p:
+    def __exit__(self, exc_type, exc_val, exc_tb):  # with proputil('build.prop') as p:
         self.save()
+
 
 class updaterutil:
     def __init__(self, fd):
-        #self.path = Path(path)
+        # self.path = Path(path)
         self.fd = fd
         if not self.fd:
             raise IOError("fd is not valid!")
         self.content = self.__parse_commands
-    
+
     @property
-    def __parse_commands(self): # This part code from @libchara-dev
-        self.fd.seek(0, 0) # set seek from start
+    def __parse_commands(self):  # This part code from @libchara-dev
+        self.fd.seek(0, 0)  # set seek from start
         commands = re.findall(r'(\w+)\((.*?)\)', self.fd.read().replace('\n', ''))
-        parsed_commands = [[command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))] for command, args in commands]
+        parsed_commands = [
+            [command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))]
+            for command, args in commands]
         return parsed_commands
 
-    def generate(self, author: str, version: str, partitions: dict): # This part code from @libchara-dev
+    def generate(self, author: str, version: str, partitions: dict):  # This part code from @libchara-dev
         def add_quotes_if_needed(arg):
             return arg if arg.isdigit() else f'"{arg}"'
+
         if not partitions.get("system") or not partitions.get("boot"):
             return None
         # 将多行项目合并为单行
@@ -103,10 +106,13 @@ class updaterutil:
         commands = re.findall(pattern, updater_script)
 
         # 筛选并保留symlink、set_metadata_recursive和set_metadata命令
-        filtered_commands = [(command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args))) for command, args in commands if command in {'symlink', 'set_metadata_recursive', 'set_metadata'}]
+        filtered_commands = [
+            (command, *(arg[0] or arg[1] or arg[2] for arg in re.findall(r'(?:"([^"]+)"|(\b\d+\b)|(\b\S+\b))', args)))
+            for command, args in commands if command in {'symlink', 'set_metadata_recursive', 'set_metadata'}]
 
         # 将命令和参数转换为字符串
-        updater_script_content = [f"{command}({', '.join(map(add_quotes_if_needed, args))});" for command, *args in filtered_commands]
+        updater_script_content = [f"{command}({', '.join(map(add_quotes_if_needed, args))});" for command, *args in
+                                  filtered_commands]
 
         full_commands = [
             "ui_print(\"\");",
@@ -116,7 +122,7 @@ class updaterutil:
             f"ui_print(\"- MTK PORT TOOL Info below:\");",
             f"ui_print(\"    TOOL Author: {tool_author}\");",
             f"ui_print(\"    TOOL Version: {tool_version}\");",
-            f"ui_print(\"{'='*49}\");",
+            f"ui_print(\"{'=' * 49}\");",
             # unmount before flash
             f"ifelse(is_mounted(\"/system\"), unmount(\"/system\"));",
             # format system
@@ -144,18 +150,20 @@ class updaterutil:
             "set_progress(1);",
         ]
         return "\n".join(full_commands)
+
+
 class ziputil:
     def __init__(self):
         pass
-    
+
     def decompress(zippath: str, outdir: str):
         with ZipFile(zippath, 'r') as zipf:
             zipf.extractall(outdir)
-    
+
     def extract_onefile(zippath: str, filename: str, outpath: str):
         with ZipFile(zippath, 'r') as zipf:
             zipf.extract(filename, outpath)
-    
+
     def compress(zippath: str, indir: str):
         with ZipFile(zippath, 'w', ZIP_DEFLATED) as zipf:
             for root, dirs, files in walk(indir):
@@ -163,6 +171,7 @@ class ziputil:
                     file_path = op.join(root, file)
                     zip_path = op.relpath(op.abspath(file_path), op.abspath(indir))
                     zipf.write(file_path, zip_path)
+
 
 class xz_util:
     def __init__(self):
@@ -173,17 +182,18 @@ class xz_util:
             with lzma.open(dest_file_path, 'wb') as dest_file:
                 dest_file.write(src_file.read())
 
+
 class bootutil:
     def __init__(self, bootpath):
         self.bootpath = op.abspath(bootpath)
         self.bootdir = op.dirname(self.bootpath)
         self.retcwd = getcwd()
-    
+
     def unpack(self):
         chdir(self.bootdir)
         unpack_bootimg(self.bootpath)
         chdir(self.retcwd)
-    
+
     def repack(self):
         chdir(self.bootdir)
         print(getcwd())
@@ -200,33 +210,35 @@ class bootutil:
             ) = [i.lstrip("\x00").rstrip().split(':')[1] for i in iter(f.readline, "")]
         repack_bootimg(base, cmdline, page_size, padding_size, None)
         chdir(self.retcwd)
-    
+
     def __entry__(self):
         return self
 
     def __exit__(self, *vars):
         chdir(self.retcwd)
 
+
 class portutils:
-    def __init__(self, items: dict, bootimg: str, sysimg: str, portzip: str, genimg: bool = False, stdlog = None):
+    def __init__(self, items: dict, bootimg: str, sysimg: str, portzip: str, genimg: bool = False, stdlog=None):
         self.items = items
         self.sysimg = sysimg
         self.bootimg = bootimg
         self.portzip = portzip
-        self.genimg = genimg # if you want system.img
+        self.genimg = genimg  # if you want system.img
         self.outdir = Path("out")
         if not self.outdir.exists():
             self.outdir.mkdir(parents=True)
         if not stdlog:
             self.std = stdout
-        else: self.std = stdlog
+        else:
+            self.std = stdlog
         if not self.__check_exist:
             print("文件是否存在检查不通过", file=self.std)
             return
 
         # sdat
         self.sdat = False
-    
+
     @property
     def __check_exist(self) -> bool:
         for i in (self.sysimg, self.bootimg, self.portzip):
@@ -240,12 +252,12 @@ class portutils:
         creationflags = subprocess.CREATE_NO_WINDOW if osname == 'nt' else 0
         try:
             ret = subprocess.run(cmd,
-                                   shell=False,
-                                   #stdin=subprocess.PIPE,
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.STDOUT,
-                                   creationflags=creationflags
-                                )
+                                 shell=False,
+                                 # stdin=subprocess.PIPE,
+                                 stdout=subprocess.PIPE,
+                                 stderr=subprocess.STDOUT,
+                                 creationflags=creationflags
+                                 )
         except:
             self.std.write("! Cannot execute program\n")
             return -1
@@ -260,11 +272,12 @@ class portutils:
         outdir.mkdir(parents=True)
         print(f"解压移植包...", file=self.std)
         ziputil.decompress(self.portzip, str(outdir))
-    
+
     def __port_boot(self) -> bool:
         def __replace(src: Path, dest: Path):
             print(f"boot替换 {src} -> {dest}...", file=self.std)
             return dest.write_bytes(src.read_bytes())
+
         basedir = Path("tmp/base")
         portdir = Path("tmp/port")
         # make new dir
@@ -273,7 +286,7 @@ class portutils:
             rmtree(basedir)
         if portdir.exists():
             rmtree(portdir)
-        
+
         basedir.mkdir(parents=True)
         portdir.mkdir(parents=True)
 
@@ -287,7 +300,7 @@ class portutils:
             print("Error: 无法从移植包根目录内解压boot.img", file=self.std)
             return False
         port = Path(portdir.joinpath("boot.img").absolute())
-        #port.write_bytes(Path("tmp/rom/boot.img").read_bytes())
+        # port.write_bytes(Path("tmp/rom/boot.img").read_bytes())
 
         # unpack boot.img
         print("解包boot镜像", file=self.std)
@@ -313,21 +326,22 @@ class portutils:
                     if portdir.joinpath("bootinfo.txt").exists():
                         with portdir.joinpath("bootinfo.txt").open("r+") as f:
                             lines = [i.rstrip() for i in f.readlines()]
-                            #f.truncate(0)
+                            # f.truncate(0)
                             flag = False
                             for i in lines:
                                 if "androidboot.selinux=permissive" in i:
                                     print("已开启selinux宽容，无需操作", file=self.std)
                                     flag = True
-                            if flag: continue
+                            if flag:
+                                continue
                             else:
                                 f.truncate(0)
                                 for i in lines:
                                     if i.startswith("cmdline:"):
                                         print("开启selinux宽容", file=self.std)
-                                        f.write(i+" androidboot.selinux=permissive\n")
+                                        f.write(i + " androidboot.selinux=permissive\n")
                                     else:
-                                        f.write(i+'\n')
+                                        f.write(i + '\n')
                 case 'enable_adb':
                     if portdir.joinpath("inidrd/default.prop").exists():
                         print("开启adb和调试", file=self.std)
@@ -340,7 +354,7 @@ class portutils:
                             ]
                             for key, value in kv:
                                 p.setprop(key, value)
-        
+
         # repack boot
         print("打包boot镜像", file=self.std)
         bootutil(str(port)).repack()
@@ -357,7 +371,7 @@ class portutils:
                 else:
                     __replace(Path("new-boot.img"), to)
                     unlink("new-boot.img")
-                
+
             else:
                 print(f"找不到{self.items['magisk_apk']}", file=self.std)
 
@@ -366,7 +380,7 @@ class portutils:
     def __port_system(self):
         def __replace(val: str):
             print(f"替换$base/{val} -> $port/{val}...", file=self.std)
-            if "*" in val: # 匹配通配符
+            if "*" in val:  # 匹配通配符
                 for file in glob.glob(op.join(str(base_prefix), val)):
                     relfile = op.relpath(file, str(base_prefix))
                     print(f"\t$base/{relfile} -> $port/{relfile}", file=self.std)
@@ -457,7 +471,7 @@ class portutils:
                 case 'fit_density':
                     print(f"从底包获取dpi并替换到移植包", file=self.std)
                     with proputil(str(port_prefix.joinpath("build.prop"))) as pp, \
-                         proputil(str(base_prefix.joinpath("build.prop"))) as bp:
+                            proputil(str(base_prefix.joinpath("build.prop"))) as bp:
                         print(f"修改移植包build.prop dpi:{bp.getprop('ro.sf.lcd_density')}", file=self.std)
                         pp.setprop('ro.sf.lcd_density', bp.getprop('ro.sf.lcd_density'))
                 case 'change_timezone' | 'change_locale' | 'change_model':
@@ -474,21 +488,21 @@ class portutils:
                             ]
                         case 'model':
                             keys = [
-                            'ro.product.manufacturer',
-                            'ro.build.product',
-                            'ro.product.model',
-                            'ro.product.device',
-                            'ro.product.board',
-                            'ro.product.brand',
+                                'ro.product.manufacturer',
+                                'ro.build.product',
+                                'ro.product.model',
+                                'ro.product.device',
+                                'ro.product.board',
+                                'ro.product.brand',
                             ]
                     with proputil(str(port_prefix.joinpath("build.prop"))) as pp, \
-                         proputil(str(base_prefix.joinpath("build.prop"))) as bp:
+                            proputil(str(base_prefix.joinpath("build.prop"))) as bp:
                         for key in keys:
                             value = bp.getprop(key)
                             print(f"修改移植包build.prop键值 [{key}]:[{value}]", file=self.std)
                             pp.setprop(key, value)
         return True
-    
+
     def __pack_rom(self):
         for item in self.items['flags']:
             item_flag = self.items['flags'][item]
@@ -515,9 +529,12 @@ class portutils:
                                     f.truncate()
                                     f.write(new_script)
                                     print("脚本生成成功...", file=self.std)
-                                else: print("脚本生成错误...", file=self.std)
-                        else: print("刷机脚本未找到...", file=self.std)
-                    else: print("刷机包可能是sdat格式或者你的partitions里没指定system和boot", file=self.std)
+                                else:
+                                    print("脚本生成错误...", file=self.std)
+                        else:
+                            print("刷机脚本未找到...", file=self.std)
+                    else:
+                        print("刷机包可能是sdat格式或者你的partitions里没指定system和boot", file=self.std)
         print("打包卡刷包.....", end='', file=self.std)
         outpath = Path(f"out/{op.basename(self.portzip)}")
         if outpath.exists():
@@ -527,9 +544,9 @@ class portutils:
             print("sdat格式打包...", file=self.std)
             print("生成system镜像中...", file=self.std)
             config_dir = Path("tmp/rom/config")
-            #if config_dir.exists():
+            # if config_dir.exists():
             #    rmtree(config_dir)
-            #config_dir.mkdir(parents=True)
+            # config_dir.mkdir(parents=True)
 
             # 去重
             with config_dir.joinpath("system_file_contexts").open('r+') as fc:
@@ -550,7 +567,7 @@ class portutils:
             print("添加缺失的文件和权限", file=self.std)
             fs_files = [i[0] for i in fs_label]
             for root, dirs, files in walk("tmp/rom/system"):
-                if "tmp/install" in root.replace('\\', '/'): continue # skip lineage spec
+                if "tmp/install" in root.replace('\\', '/'): continue  # skip lineage spec
                 for dir in dirs:
                     unix_path = op.join(
                         op.join("/system", op.relpath(op.join(root, dir), "tmp/rom/system")).replace("\\", "/")
@@ -569,13 +586,14 @@ class portutils:
                         else:
                             if "bin/" in unix_path:
                                 mode = '0755'
-                            else: mode = '0644'
+                            else:
+                                mode = '0644'
                             fs_label.append(
                                 [unix_path.lstrip('/'), '0', '2000', mode])
             fs_config = config_dir.joinpath("system_fs_config").open('w', newline='\n')
             fs_label.sort()
             for fs in fs_label:
-                fs_config.write(" ".join(fs)+'\n')
+                fs_config.write(" ".join(fs) + '\n')
             fs_config.close()
 
             fit_size = self.__pack_fit_size()
@@ -583,10 +601,10 @@ class portutils:
 
             make_ext4fs_cmd = [
                 make_ext4fs_bin,
-                '-s', # sparse image
-                '-J', # has journal
-                '-T', '1', # custom mtime
-                '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
+                '-s',  # sparse image
+                '-J',  # has journal
+                '-T', '1',  # custom mtime
+                '-l', f'{sys_size if sys_size >= fit_size else fit_size}',  # pack size
                 '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
                 '-S', f"{str(config_dir.joinpath('system_file_contexts'))}",
                 '-L', 'system', '-a', 'system',
@@ -603,7 +621,7 @@ class portutils:
                 rmtree("tmp/rom/config")
             if op.isfile("tmp/rom/system.transfer.list"):
                 unlink("tmp/rom/system.transfer.list")
-            
+
             img2sdat("out/system.img", "tmp/rom", self.sdat_ver)
             if op.isfile("tmp/rom/system.img"):
                 print("删除遗留system镜像...", file=self.std)
@@ -611,30 +629,32 @@ class portutils:
         ziputil.compress(str(outpath), "tmp/rom/")
         print("完成！", file=self.std)
         return
-    
+
     def __pack_fit_size(self):
-            total = 0
-            for root, dirs, files in walk("tmp/rom/system"):
-                for file in files:
-                    total += stat(op.join(root, file)).st_size
-            return total * 1.2
+        total = 0
+        for root, dirs, files in walk("tmp/rom/system"):
+            for file in files:
+                total += stat(op.join(root, file)).st_size
+        return total * 1.2
 
     def __readlink(self, dest: str):
         if osname == 'nt':
             with open(dest, 'rb') as f:
                 if f.read(10) == b'!<symlink>':
                     return f.read().decode('utf-16').rstrip('\0')
-                else: return None
+                else:
+                    return None
         else:
             try:
                 readlink(dest)
-            except: return None
+            except:
+                return None
 
     def __pack_img(self):
         def __symlink(src: str, dest: str):
             def setSystemAttrib(path: str) -> wintypes.BOOL:
                 return windll.kernel32.SetFileAttributesA(path.encode('gb2312'), wintypes.DWORD(0x4))
-        
+
             print(f"创建软链接 [{src}] -> [{dest}]", file=self.std)
             pdest = Path(dest)
             if not pdest.parent.exists():
@@ -644,8 +664,9 @@ class portutils:
                     f.write(
                         b"!<symlink>" + src.encode('utf-16') + b'\0\0')
                 setSystemAttrib(dest)
-            else: symlink(src, dest)
-        
+            else:
+                symlink(src, dest)
+
         print("将输出打包为system镜像", file=self.std)
         updater = Path("tmp/rom/META-INF/com/google/android/updater-script")
         config_dir = Path("tmp/config")
@@ -666,7 +687,7 @@ class portutils:
         if not updater.exists():
             self.std.write(f"Error: 刷机脚本不存在")
             return
-        
+
         print("分析刷机脚本...", file=self.std)
         contents = updaterutil(updater.open('r', encoding='utf-8')).content
         romprefix = Path("tmp/rom/")
@@ -683,40 +704,40 @@ class portutils:
                     fpath, *fargs = args
 
                     fpath = fpath.replace("+", "\\+").replace("[", "\\[").replace('//', '/')
-                    if fpath == last_fpath: continue # skip same path
+                    if fpath == last_fpath: continue  # skip same path
                     # initial
                     uid, gid, mode, extra = '0', '0', '644', ''
-                    selable = 'u:object_r:system_file:s0' # common system selable
+                    selable = 'u:object_r:system_file:s0'  # common system selable
                     for index, farg in enumerate(fargs):
                         match farg:
                             case 'uid':
-                                uid = fargs[index+1]
+                                uid = fargs[index + 1]
                             case 'gid':
-                                gid = fargs[index+1]
-                            case 'mode'|'fmode'|'dmode':
+                                gid = fargs[index + 1]
+                            case 'mode' | 'fmode' | 'dmode':
                                 if dirmode and farg == 'dmode':
-                                    mode = fargs[index+1]
+                                    mode = fargs[index + 1]
                                 else:
-                                    mode = fargs[index+1]
+                                    mode = fargs[index + 1]
                             case 'capabilities':
-                                #continue
-                                if fargs[index+1] == '0x0':
+                                # continue
+                                if fargs[index + 1] == '0x0':
                                     extra = ''
                                 else:
-                                    extra = 'capabilities=' + fargs[index+1]
+                                    extra = 'capabilities=' + fargs[index + 1]
                             case 'selabel':
-                                selable = fargs[index+1]
+                                selable = fargs[index + 1]
                     fs_label.append(
                         [fpath.lstrip('/'), uid, gid, mode, extra])
                     fc_label.append(
                         [fpath, selable])
                     last_fpath = fpath
 
-        #Patch fs_config
+        # Patch fs_config
         print("添加缺失的文件和权限", file=self.std)
         fs_files = [i[0] for i in fs_label]
         for root, dirs, files in walk("tmp/rom/system"):
-            if "tmp/install" in root.replace('\\', '/'): continue # skip lineage spec
+            if "tmp/install" in root.replace('\\', '/'): continue  # skip lineage spec
             for dir in dirs:
                 unix_path = op.join(
                     op.join("/system", op.relpath(op.join(root, dir), "tmp/rom/system")).replace("\\", "/")
@@ -735,7 +756,8 @@ class portutils:
                     else:
                         if "bin/" in unix_path:
                             mode = '0755'
-                        else: mode = '0644'
+                        else:
+                            mode = '0644'
                         fs_label.append(
                             [unix_path.lstrip('/'), '0', '2000', mode])
 
@@ -743,11 +765,12 @@ class portutils:
         print("生成fs_config 和 file_contexts", file=self.std)
         fs_config = config_dir.joinpath("system_fs_config").open('w', newline='\n')
         file_contexts = config_dir.joinpath("system_file_contexts").open('w', newline='\n')
-        fs_label.sort(); fc_label.sort()
+        fs_label.sort();
+        fc_label.sort()
         for fs in fs_label:
-            fs_config.write(" ".join(fs)+'\n')
+            fs_config.write(" ".join(fs) + '\n')
         for fc in fc_label:
-            file_contexts.write(" ".join(fc)+'\n')
+            file_contexts.write(" ".join(fc) + '\n')
         fs_config.close()
         file_contexts.close()
 
@@ -755,10 +778,10 @@ class portutils:
         sys_size = stat(self.sysimg).st_size
         make_ext4fs_cmd = [
             make_ext4fs_bin,
-            #'-s', # sparse image
-            '-J', # has journal
-            '-T', '1', # custom mtime
-            '-l', f'{sys_size if sys_size >= fit_size else fit_size}', # pack size
+            # '-s', # sparse image
+            '-J',  # has journal
+            '-T', '1',  # custom mtime
+            '-l', f'{sys_size if sys_size >= fit_size else fit_size}',  # pack size
             '-C', f"{str(config_dir.joinpath('system_fs_config'))}",
             '-S', f"{str(config_dir.joinpath('system_file_contexts'))}",
             '-L', 'system', '-a', 'system',
@@ -778,8 +801,9 @@ class portutils:
         self.__port_system()
         if self.genimg:
             self.__pack_img()
-        else: self.__pack_rom()
-    
+        else:
+            self.__pack_rom()
+
     def clean(self):
         print("移植完成，清理目录", file=self.std)
         if Path("tmp").exists():
