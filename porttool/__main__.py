@@ -16,15 +16,14 @@ def main():
     # root.geometry("860x480")
 
     myapp = MyUI(root)
-    myapp.pack(side='top', fill='both', padx=5, pady=5, expand='yes')
+    myapp.pack(side='top', fill='both', padx=5, pady=5, expand=True)
 
     # Fix high dpi
     if name == 'nt':
         # Tell system using self dpi adapt
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
         # Get screen resize scale factor
-        scalefactor = ctypes.windll.shcore.GetScaleFactorForDevice(0)
-        root.tk.call('tk', 'scaling', scalefactor / 75)
+        root.tk.call('tk', 'scaling', ctypes.windll.shcore.GetScaleFactorForDevice(0) / 75)
 
     root.update()
     try:
