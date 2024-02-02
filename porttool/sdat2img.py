@@ -1,35 +1,31 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#====================================================
+# ====================================================
 #          FILE: sdat2img.py
 #       AUTHORS: xpirt - luxi78 - howellzhu
 #          DATE: 2018-10-27 10:33:21 CEST
-#====================================================
+# ====================================================
 
 from __future__ import print_function
-import sys, os, errno
+
+import errno
+import os
+import sys
+
 
 def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
     __version__ = '1.2'
 
-    if sys.hexversion < 0x02070000:
-        print >> sys.stderr, "Python 2.7 or newer is required."
-        try:
-            input = raw_input
-        except NameError: pass
-        input('Press ENTER to exit...')
-        sys.exit(1)
-    else:
-        print('sdat2img binary - version: {}\n'.format(__version__))
+    print('sdat2img binary - version: {}\n'.format(__version__))
 
     def rangeset(src):
         src_set = src.split(',')
-        num_set =  [int(item) for item in src_set]
-        if len(num_set) != num_set[0]+1:
+        num_set = [int(item) for item in src_set]
+        if len(num_set) != num_set[0] + 1:
             print('Error on parsing following data to rangeset:\n{}'.format(src), file=sys.stderr)
             sys.exit(1)
 
-        return tuple ([ (num_set[i], num_set[i+1]) for i in range(1, len(num_set), 2) ])
+        return tuple([(num_set[i], num_set[i + 1]) for i in range(1, len(num_set), 2)])
 
     def parse_transfer_list_file(path):
         trans_list = open(TRANSFER_LIST_FILE, 'r')
@@ -64,7 +60,7 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
         return version, new_blocks, commands
 
     BLOCK_SIZE = 4096
-    
+
     version, new_blocks, commands = parse_transfer_list_file(TRANSFER_LIST_FILE)
 
     if version == 1:
@@ -91,7 +87,7 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
 
     new_data_file = open(NEW_DATA_FILE, 'rb')
     all_block_sets = [i for command in commands for i in command[1]]
-    max_file_size = max(pair[1] for pair in all_block_sets)*BLOCK_SIZE
+    max_file_size = max(pair[1] for pair in all_block_sets) * BLOCK_SIZE
 
     for command in commands:
         if command[0] == 'new':
@@ -102,22 +98,23 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
                 print('Copying {} blocks into position {}...'.format(block_count, begin))
 
                 # Position output file
-                output_img.seek(begin*BLOCK_SIZE)
-                
+                output_img.seek(begin * BLOCK_SIZE)
+
                 # Copy one block at a time
-                while(block_count > 0):
+                while block_count > 0:
                     output_img.write(new_data_file.read(BLOCK_SIZE))
                     block_count -= 1
         else:
             print('Skipping command {}...'.format(command[0]))
 
     # Make file larger if necessary
-    if(output_img.tell() < max_file_size):
+    if output_img.tell() < max_file_size:
         output_img.truncate(max_file_size)
 
     output_img.close()
     new_data_file.close()
     print('Done! Output image: {}'.format(os.path.realpath(output_img.name)))
+
 
 if __name__ == '__main__':
     try:
@@ -129,9 +126,6 @@ if __name__ == '__main__':
         print('    <system_new_file>: system new dat file')
         print('    [system_img]: output system image\n\n')
         print('Visit xda thread for more information.\n')
-        try:
-            input = raw_input
-        except NameError: pass
         input('Press ENTER to exit...')
         sys.exit()
 
