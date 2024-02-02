@@ -27,7 +27,7 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
 
         return tuple([(num_set[i], num_set[i + 1]) for i in range(1, len(num_set), 2)])
 
-    def parse_transfer_list_file(path):
+    def parse_transfer_list_file():
         trans_list = open(TRANSFER_LIST_FILE, 'r')
 
         # First line in transfer list is the version number
@@ -59,9 +59,9 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
         trans_list.close()
         return version, new_blocks, commands
 
-    BLOCK_SIZE = 4096
+    block_size = 4096
 
-    version, new_blocks, commands = parse_transfer_list_file(TRANSFER_LIST_FILE)
+    version, new_blocks, commands = parse_transfer_list_file()
 
     if version == 1:
         print('Android Lollipop 5.0 detected!\n')
@@ -87,7 +87,7 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
 
     new_data_file = open(NEW_DATA_FILE, 'rb')
     all_block_sets = [i for command in commands for i in command[1]]
-    max_file_size = max(pair[1] for pair in all_block_sets) * BLOCK_SIZE
+    max_file_size = max(pair[1] for pair in all_block_sets) * block_size
 
     for command in commands:
         if command[0] == 'new':
@@ -98,11 +98,11 @@ def main(TRANSFER_LIST_FILE, NEW_DATA_FILE, OUTPUT_IMAGE_FILE):
                 print('Copying {} blocks into position {}...'.format(block_count, begin))
 
                 # Position output file
-                output_img.seek(begin * BLOCK_SIZE)
+                output_img.seek(begin * block_size)
 
                 # Copy one block at a time
                 while block_count > 0:
-                    output_img.write(new_data_file.read(BLOCK_SIZE))
+                    output_img.write(new_data_file.read(block_size))
                     block_count -= 1
         else:
             print('Skipping command {}...'.format(command[0]))

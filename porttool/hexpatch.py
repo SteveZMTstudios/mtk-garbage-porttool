@@ -3,8 +3,8 @@ import mmap
 import binascii
 
 
-def hex2byte(hexstr):
-    return binascii.unhexlify(hexstr)
+def hex2byte(hex_str):
+    return binascii.unhexlify(hex_str)
 
 
 def hexpatch(file_path: str, from_: str, to: str) -> bool:
