@@ -34,8 +34,7 @@ class proputil:
             self.propfd = Path(propfile).open('r+', encoding='utf-8')
         else:
             raise FileExistsError(f"File {propfile} does not exist!")
-        self.prop: dict = {}
-        self.prop = {n: v for n, v in self.__loadprop}
+        self.prop: dict = {n: v for n, v in self.__loadprop}
 
     @property
     def __loadprop(self) -> list:
