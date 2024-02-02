@@ -35,36 +35,27 @@ class proputil:
             self.propfd = Path(propfile).open('r+', encoding='utf-8')
         else:
             raise FileExistsError(f"File {propfile} does not exist!")
-        self.prop = self.__loadprop
+        self.prop: dict = {}
+        self.prop = {n: v for n, v in self.__loadprop}
 
     @property
     def __loadprop(self) -> list:
-        return self.propfd.readlines()
+        for __ in self.propfd.readlines():
+            if __[:1] == '#':
+                return
+            yield __.split('=')
 
-    def getprop(self, key: str) -> str | None:
-        '''
-        recive key and return value or None
-        '''
-        for i in self.prop:
-            if i.startswith(key): return i.rstrip().split('=')[1]
-        return None
+    def getprop(self, key: str) -> str or None:
+        return self.prop.get(key, '')
 
     def setprop(self, key, value) -> None:
-        flag: bool = False  # maybe there is not only one item
-        for index, current in enumerate(self.prop):
-            if key in current:
-                if not value: value = ''  # wtf?
-                self.prop[index] = current.split('=')[0] + '=' + value + '\n'
-                flag = True
-        if not flag:
-            self.prop.append(
-                key + '=' + value + '\n'
-            )
+        self.prop[key] = value
 
     def save(self):
         self.propfd.seek(0, 0)
         self.propfd.truncate()
-        self.propfd.writelines(self.prop)
+        for i in self.prop.keys():
+            self.propfd.write(f'{i}={self.prop.get(i, "")}\n')
         self.propfd.close()
 
     def __enter__(self):
