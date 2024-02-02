@@ -10,6 +10,8 @@ from stat import *
 import shutil
 from gzip import GzipFile
 
+__all__ = ['repack_bootimg', 'unpack_bootimg']
+
 
 def sha_file(sha, file):
     if file is None:

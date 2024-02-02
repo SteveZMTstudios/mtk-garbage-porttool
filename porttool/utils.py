@@ -197,7 +197,7 @@ class bootutil:
 
 
 class portutils:
-    def __init__(self, items: dict, bootimg: str, sysimg: str, portzip: str, genimg: bool = False, stdlog=None):
+    def __init__(self, items: dict, bootimg: str, sysimg: str, portzip: str, genimg: bool = False):
         self.items = items
         self.sysimg = sysimg
         self.bootimg = bootimg
