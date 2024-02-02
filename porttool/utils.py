@@ -387,8 +387,6 @@ class portutils:
                 port_prefix.joinpath(val).write_bytes(
                     base_prefix.joinpath(val).read_bytes()
                 )
-
-        unpack_flag = False
         print("检测system md5检验和是否相同", file=self.std)
         with open(self.sysimg, 'rb') as f:
             md5filter = md5()
@@ -401,7 +399,6 @@ class portutils:
             md5fd = md5path.open("w")
             md5fd.write(sysmd5)
             readmd5 = ''
-            unpack_flag = True
         else:
             md5fd = md5path.open("r+")
             readmd5 = md5fd.readline().rstrip()
@@ -544,17 +541,13 @@ class portutils:
                 fc_info = [i.rstrip() for i in iter(fc.readline, "")]
                 new_fc_info = []
                 for i in fc_info:
-                    if not i in new_fc_info:
+                    if i not in new_fc_info:
                         new_fc_info.append(i)
                 fc.seek(0, 0)
                 fc.truncate(0)
                 fc.write("\n".join(new_fc_info))
 
-            fs_label = []
-            fs_label.append(
-                ["/", '0', '0', '0755'])
-            fs_label.append(
-                ["/lost\\+found", '0', '0', '0700'])
+            fs_label = [["/", '0', '0', '0755'], ["/lost\\+found", '0', '0', '0700']]
             print("添加缺失的文件和权限", file=self.std)
             fs_files = [i[0] for i in fs_label]
             for root, dirs, files in walk("tmp/rom/system"):
@@ -756,7 +749,7 @@ class portutils:
         print("生成fs_config 和 file_contexts", file=self.std)
         fs_config = config_dir.joinpath("system_fs_config").open('w', newline='\n')
         file_contexts = config_dir.joinpath("system_file_contexts").open('w', newline='\n')
-        fs_label.sort();
+        fs_label.sort()
         fc_label.sort()
         for fs in fs_label:
             fs_config.write(" ".join(fs) + '\n')
