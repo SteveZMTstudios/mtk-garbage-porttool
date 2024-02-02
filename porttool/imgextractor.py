@@ -2,7 +2,7 @@ import os
 import re
 import struct
 
-from . import ext4
+from porttool import ext4
 if os.name == 'nt':
     from ctypes.wintypes import LPCSTR, DWORD
     from stat import FILE_ATTRIBUTE_SYSTEM
