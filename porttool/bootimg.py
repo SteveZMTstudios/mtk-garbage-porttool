@@ -440,12 +440,12 @@ class CPIOGZIP(GzipFile):
         pass
 
 
-__all__ = ['parse_bootimg',
-           'write_bootimg',
-           'parse_cpio',
-           'write_cpio',
-           'cpio_list',
-           ]
+__all__ += ['parse_bootimg',
+            'write_bootimg',
+            'parse_cpio',
+            'write_cpio',
+            'cpio_list',
+            ]
 
 base = None
 ramdisk_addr = None
