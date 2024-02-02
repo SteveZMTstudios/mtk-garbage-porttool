@@ -381,15 +381,6 @@ def write_cpio(cpiolist, output):
         output.write(path.encode())
         output.write(padding(filesize, 4))
 
-    def cpio_mknod(output, ino, *kw):
-        print('nod is not implemented\n')
-
-    def cpio_mkpipe(output, ino, *kw):
-        print('pipe is not implemented\n')
-
-    def cpio_mksock(output, ino, *kw):
-        print('sock is not implemented\n')
-
     def cpio_tailer(output, ino):
         name = 'TRAILER!!!'
         write_cpio_header(output, ino, name, 0o644)  # 8进制权限644, 的确应该为0? 为调用fix_stat引起的bug.
@@ -402,9 +393,9 @@ def write_cpio(cpiolist, output):
     functions = {'dir': cpio_mkdir,
                  'file': cpio_mkfile,
                  'slink': cpio_mkslink,
-                 'nod': cpio_mknod,
-                 'pipe': cpio_mkpipe,
-                 'sock': cpio_mksock}
+                 'nod': lambda *x: print("No Supported Yet"),
+                 'pipe': lambda *x: print("No Supported Yet"),
+                 'sock': lambda *x: print("No Supported Yet")}
     next_inode = 300000
     while True:
         line = cpiolist.readline()
@@ -702,8 +693,7 @@ def check_mtk_head(imgfile, outinfofile):
         return False
 
 
-def try_add_head(imgfile, outfile, imginfofile, mode=None, name=None):
-    off2 = imginfofile.tell()
+def try_add_head(imgfile, outfile, imginfofile, mode=None):
     imginfofile.seek(0, 0)
     if mode == 'auto':
         mode = None
@@ -798,7 +788,6 @@ def repack_ramdisk(cpiolist=None):
 
     tmp = open('ramdisk.cpio.gz.tmp', 'wb')
     out = open('ramdisk.cpio.gz', 'wb')
-    cpiogz = tmp
 
     info = open(cpiolist, 'r', encoding='utf8')
     compress_level = 6
