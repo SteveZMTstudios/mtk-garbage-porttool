@@ -1,5 +1,4 @@
 import glob
-import lzma
 import os.path as op
 import re
 import subprocess
@@ -164,16 +163,6 @@ class ziputil:
                     zipf.write(file_path, zip_path)
 
 
-class xz_util:
-    def __init__(self):
-        pass
-
-    def compress(src_file_path, dest_file_path):
-        with open(src_file_path, 'rb') as src_file:
-            with lzma.open(dest_file_path, 'wb') as dest_file:
-                dest_file.write(src_file.read())
-
-
 class bootutil:
     def __init__(self, bootpath):
         self.bootpath = op.abspath(bootpath)
@@ -205,7 +194,7 @@ class bootutil:
     def __entry__(self):
         return self
 
-    def __exit__(self, *vars):
+    def __exit__(self, *vars_):
         chdir(self.retcwd)
 
 
@@ -301,7 +290,8 @@ class portutils:
         # start to port boot
         for item in self.items['flags']:
             item_flag = self.items['flags'][item]
-            if not item_flag: continue
+            if not item_flag:
+                continue
             match item:
                 case 'replace_kernel':
                     for i in self.items['replace']['kernel']:
@@ -387,6 +377,7 @@ class portutils:
                 port_prefix.joinpath(val).write_bytes(
                     base_prefix.joinpath(val).read_bytes()
                 )
+
         print("检测system md5检验和是否相同", file=self.std)
         with open(self.sysimg, 'rb') as f:
             md5filter = md5()
@@ -433,7 +424,8 @@ class portutils:
         port_prefix = Path("tmp/rom/system")
         for item in self.items['flags']:
             item_flag = self.items[item]
-            if not item_flag: continue
+            if not item_flag:
+                continue
             if item == 'replace_kernel' or item == 'replace_fstab':
                 continue
             if item.startswith("replace_"):
@@ -494,7 +486,8 @@ class portutils:
     def __pack_rom(self):
         for item in self.items['flags']:
             item_flag = self.items['flags'][item]
-            if not item_flag: continue
+            if not item_flag:
+                continue
             match item:
                 case 'use_custom_update-binary':
                     print("使用提供的update-binary以解决在twrp刷入报错的问题", file=self.std)
@@ -509,8 +502,10 @@ class portutils:
                                 # try to get author
                                 author = self.items.get('author')
                                 version = self.items.get('version')
-                                if not author: author = tool_author
-                                if not version: version = tool_version
+                                if not author:
+                                    author = tool_author
+                                if not version:
+                                    version = tool_version
                                 new_script = updaterutil(f).generate(author, version, self.items['partitions'])
                                 if new_script:
                                     f.seek(0, 0)
@@ -658,16 +653,8 @@ class portutils:
             rmtree(config_dir)
         config_dir.mkdir(parents=True)
 
-        fs_label = []
-        fc_label = []
-        fs_label.append(
-            ["/", '0', '0', '0755'])
-        fs_label.append(
-            ["/lost\\+found", '0', '0', '0700'])
-        fc_label.append(
-            ['/', 'u:object_r:system_file:s0'])
-        fc_label.append(
-            ['/system(/.*)?', 'u:object_r:system_file:s0'])
+        fs_label = [["/", '0', '0', '0755'], ["/lost\\+found", '0', '0', '0700']]
+        fc_label = [['/', 'u:object_r:system_file:s0'], ['/system(/.*)?', 'u:object_r:system_file:s0']]
         if not updater.exists():
             self.std.write(f"Error: 刷机脚本不存在")
             return
@@ -688,7 +675,8 @@ class portutils:
                     fpath, *fargs = args
 
                     fpath = fpath.replace("+", "\\+").replace("[", "\\[").replace('//', '/')
-                    if fpath == last_fpath: continue  # skip same path
+                    if fpath == last_fpath:
+                        continue  # skip same path
                     # initial
                     uid, gid, mode, extra = '0', '0', '644', ''
                     selable = 'u:object_r:system_file:s0'  # common system selable
@@ -721,7 +709,8 @@ class portutils:
         print("添加缺失的文件和权限", file=self.std)
         fs_files = [i[0] for i in fs_label]
         for root, dirs, files in walk("tmp/rom/system"):
-            if "tmp/install" in root.replace('\\', '/'): continue  # skip lineage spec
+            if "tmp/install" in root.replace('\\', '/'):
+                continue  # skip lineage spec
             for dir in dirs:
                 unix_path = op.join(
                     op.join("/system", op.relpath(op.join(root, dir), "tmp/rom/system")).replace("\\", "/")
@@ -732,7 +721,7 @@ class portutils:
                 unix_path = op.join(
                     op.join("/system", op.relpath(op.join(root, file), "tmp/rom/system")).replace("\\", "/")
                 ).replace("[", "\\[")
-                if not unix_path in fs_files:
+                if unix_path not in fs_files:
                     link = self.__readlink(op.join(root, file))
                     if link:
                         fs_label.append(
