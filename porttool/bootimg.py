@@ -23,8 +23,8 @@ def sha_file(sha, file):
 
 
 def write_bootimg(output, kernel, ramdisk, second,
-        name, cmdline, base, ramdisk_addr, second_addr,
-        tags_addr, page_size, padding_size, dt_image):
+                  name, cmdline, base, ramdisk_addr, second_addr,
+                  tags_addr, page_size, padding_size, dt_image):
     """ make C8600-compatible bootimg.
         output: file object
         kernel, ramdisk, second: file object or string
@@ -47,7 +47,7 @@ def write_bootimg(output, kernel, ramdisk, second,
     assert len(cmdline) <= 512, 'Error: kernel commandline too large'
 
     if not isinstance(base, int):
-        base = 0x10000000 # 0x00200000?
+        base = 0x10000000  # 0x00200000?
         sys.stderr.write('base is %s, using default base instead.\n' % type(base))
 
     if not isinstance(ramdisk_addr, int):
@@ -67,7 +67,7 @@ def write_bootimg(output, kernel, ramdisk, second,
         sys.stderr.write('page_size is %s, using default page_size instead.\n' % type(page_size))
 
     if not isinstance(padding_size, int):
-        padding_size = 0x800 # 0x1000?
+        padding_size = 0x800  # 0x1000?
         sys.stderr.write('padding_size is %s, using default padding_size instead.\n' % type(padding_size))
 
     if not hasattr(output, 'write'):
@@ -110,11 +110,11 @@ def write_bootimg(output, kernel, ramdisk, second,
 
     kernel_addr = base + 0x00008000
     output.write(struct.pack('<8s10I16s512s32s', b'ANDROID!',
-        getsize(kernel), kernel_addr,
-        getsize(ramdisk), ramdisk_addr,
-        getsize(second), second_addr,
-        tags_addr, page_size, getsize(dt_image), 0,
-        name.encode(), cmdline.encode(), id))
+                             getsize(kernel), kernel_addr,
+                             getsize(ramdisk), ramdisk_addr,
+                             getsize(second), second_addr,
+                             tags_addr, page_size, getsize(dt_image), 0,
+                             name.encode(), cmdline.encode(), id))
 
     output.write(padding(608))
     writecontent(output, kernel)
@@ -138,7 +138,7 @@ def parse_bootimg(bootimg):
     """
 
     bootinfo = open('bootinfo.txt', 'w')
-    #check_mtk_head(bootimg, bootinfo)
+    # check_mtk_head(bootimg, bootinfo)
 
     (magic,
      kernel_size, kernel_addr,
@@ -146,7 +146,7 @@ def parse_bootimg(bootimg):
      second_size, second_addr,
      tags_addr, page_size, dt_size, zero,
      name, cmdline, id4x8
-    ) = struct.unpack('<8s10I16s512s32s', bootimg.read(608))
+     ) = struct.unpack('<8s10I16s512s32s', bootimg.read(608))
     bootimg.seek(page_size - 608, 1)
 
     base = kernel_addr - 0x00008000
@@ -193,30 +193,30 @@ def parse_bootimg(bootimg):
     gzname = lambda x: x == struct.pack('3B', 0x1f, 0x8b, 0x08) and '.gz' or ''
 
     kernel = bootimg.read(kernel_size)
-    output = open('kernel%s' % gzname(kernel[:3]) , 'wb')
+    output = open('kernel%s' % gzname(kernel[:3]), 'wb')
     output.write(kernel)
     output.close()
     bootimg.seek(padding(kernel_size), 1)
 
     ramdisk = bootimg.read(ramdisk_size)
-    output = open('ramdisk%s' % gzname(ramdisk[:3]) , 'wb')
+    output = open('ramdisk%s' % gzname(ramdisk[:3]), 'wb')
     output.write(ramdisk)
     output.close()
     bootimg.seek(padding(ramdisk_size), 1)
 
     if second_size:
         second = bootimg.read(second_size)
-        output = open('second%s' % gzname(second[:3]) , 'wb')
+        output = open('second%s' % gzname(second[:3]), 'wb')
         output.write(second)
         output.close()
         bootimg.seek(padding(ramdisk_size), 1)
 
     if dt_size:
         dt_image = bootimg.read(dt_size)
-        output = open('dt_image%s' % gzname(dt_image[:3]) , 'wb')
+        output = open('dt_image%s' % gzname(dt_image[:3]), 'wb')
         output.write(dt_image)
         output.close()
-#        bootimg.seek(padding(second_size), 1)
+    #        bootimg.seek(padding(second_size), 1)
 
     bootimg.close()
 
@@ -236,7 +236,7 @@ def cpio_list(directory, output=None):
             path = os.path.join(root, file)
             info = os.lstat(path)
             name = path.replace(directory, '', 1)
-            name = name.replace(os.sep, '/')    # for windows
+            name = name.replace(os.sep, '/')  # for windows
             if name[:1] == '/':
                 name = name[1:]
             mode = oct(S_IMODE(info.st_mode))
@@ -269,17 +269,17 @@ def parse_cpio(cpio, directory, cpiolist):
 
     def read_cpio_header(cpio):
         assert cpio.read(6).decode('latin') == '070701', 'invalid cpio'
-        cpio.read(8) # ignore inode number
+        cpio.read(8)  # ignore inode number
         mode = int(cpio.read(8), 16)
-        cpio.read(8) # uid
-        cpio.read(8) # gid
-        cpio.read(8) # nlink
-        cpio.read(8) # timestamp
+        cpio.read(8)  # uid
+        cpio.read(8)  # gid
+        cpio.read(8)  # nlink
+        cpio.read(8)  # timestamp
         filesize = int(cpio.read(8), 16)
-        cpio.read(8) # major
-        cpio.read(8) # minor
-        cpio.read(8) # rmajor
-        cpio.read(8) # rminor
+        cpio.read(8)  # major
+        cpio.read(8)  # minor
+        cpio.read(8)  # rmajor
+        cpio.read(8)  # rminor
         namesize = int(cpio.read(8), 16)
         cpio.read(8)
         name = cpio.read(namesize - 1).decode('utf8')
@@ -298,8 +298,8 @@ def parse_cpio(cpio, directory, cpiolist):
             name = name[1:]
 
         name = os.path.normpath(name)
-        path = '%s/%s' %(directory, name)
-        name = name.replace(os.sep, '/') # for windows
+        path = '%s/%s' % (directory, name)
+        name = name.replace(os.sep, '/')  # for windows
 
         srwx = oct(S_IMODE(mode))
         if S_ISLNK(mode):
@@ -308,8 +308,10 @@ def parse_cpio(cpio, directory, cpiolist):
             cpio.read(padding(filesize))
             cpiolist.write('slink\t%s\t%s\t%s\n' % (name, location, srwx))
         elif S_ISDIR(mode):
-            try: os.makedirs(path)
-            except os.error: pass
+            try:
+                os.makedirs(path)
+            except os.error:
+                pass
             cpiolist.write('dir\t%s\t%s\n' % (name, srwx))
         elif S_ISREG(mode):
             tmp = open(path, 'wb')
@@ -325,7 +327,7 @@ def parse_cpio(cpio, directory, cpiolist):
     cpiolist.close()
 
 
-#根据system/core/cpio/mkbootfs.c对代码进行修正
+# 根据system/core/cpio/mkbootfs.c对代码进行修正
 def write_cpio(cpiolist, output):
     """ generate cpio from cpiolist.
         cpiolist: file object
@@ -339,17 +341,17 @@ def write_cpio(cpiolist, output):
         namesize = len(name) + 1
         latin = lambda x: x.encode('latin')
         output.write(latin('070701'))
-        output.write(latin('%08x' % ino)) # Android自300000递增 # ino normally only for hardlink
+        output.write(latin('%08x' % ino))  # Android自300000递增 # ino normally only for hardlink
 
         output.write(latin('%08x' % mode))
-        output.write(latin('%08x%08x' % (0, 0))) # uid, gid set to 0
-        output.write(latin('%08x' % 1)) # 在Android中恒为1而非nlink
-        output.write(latin('%08x' % 0)) # timestamp set to 0
+        output.write(latin('%08x%08x' % (0, 0)))  # uid, gid set to 0
+        output.write(latin('%08x' % 1))  # 在Android中恒为1而非nlink
+        output.write(latin('%08x' % 0))  # timestamp set to 0
         output.write(latin('%08x' % filesize))
-        output.write(latin('%08x%08x' % (0, 0))) # 在Android中为(0, 0) 而非 (3, 1)
-        output.write(latin('%08x%08x' % (0, 0))) # dont support rmajor, rminor
+        output.write(latin('%08x%08x' % (0, 0)))  # 在Android中为(0, 0) 而非 (3, 1)
+        output.write(latin('%08x%08x' % (0, 0)))  # dont support rmajor, rminor
         output.write(latin('%08x' % namesize))
-        output.write(latin('%08x' % 0)) # chksum always be 0
+        output.write(latin('%08x' % 0))  # chksum always be 0
         output.write(name)
         output.write(struct.pack('1s', b''))
         output.write(padding(namesize + 110, 4))
@@ -367,7 +369,7 @@ def write_cpio(cpiolist, output):
             sys.stderr.write('not found file %s, skip it\n' % path)
 
     def cpio_mkdir(output, ino, name, mode='755', *kw):
-        #if name == 'tmp':
+        # if name == 'tmp':
         #    mode = '1777'
         mode = int(mode, 8) | S_IFDIR
         write_cpio_header(output, ino, name, mode, 2, 0)
@@ -390,7 +392,7 @@ def write_cpio(cpiolist, output):
 
     def cpio_tailer(output, ino):
         name = 'TRAILER!!!'
-        write_cpio_header(output, ino, name, 0o644) # 8进制权限644, 的确应该为0? 为调用fix_stat引起的bug.
+        write_cpio_header(output, ino, name, 0o644)  # 8进制权限644, 的确应该为0? 为调用fix_stat引起的bug.
 
         # normally, padding is ignored by decompresser
         if hasattr(output, 'tell'):
@@ -415,7 +417,7 @@ def write_cpio(cpiolist, output):
         if not function:
             continue
         lines.pop(0)
-        lines[0] = lines[0].replace(os.sep, '/') # if any
+        lines[0] = lines[0].replace(os.sep, '/')  # if any
         if lines[0] in files:
             sys.stderr.write('ignore duplicate %s\n' % lines[0])
             continue
@@ -445,12 +447,12 @@ class CPIOGZIP(GzipFile):
         pass
 
 
-__all__ = [ 'parse_bootimg',
-            'write_bootimg',
-            'parse_cpio',
-            'write_cpio',
-            'cpio_list',
-            ]
+__all__ = ['parse_bootimg',
+           'write_bootimg',
+           'parse_cpio',
+           'write_cpio',
+           'cpio_list',
+           ]
 
 base = None
 ramdisk_addr = None
@@ -461,11 +463,13 @@ cmdline = None
 page_size = None
 padding_size = None
 
+
 def parse_bootinfo(bootinfo):
-#''' parse bootinfo for repack bootimg.
-#    bootinfo: file object
-#'''
+    # ''' parse bootinfo for repack bootimg.
+    #    bootinfo: file object
+    # '''
     global base, ramdisk_addr, second_addr, tags_addr, name, cmdline, page_size, padding_size
+
     def set_base(addr):
         global base
         if base is None:
@@ -527,6 +531,7 @@ def parse_bootinfo(bootinfo):
             continue
         lines.pop(0)
         function(*lines)
+
 
 # above is the module of bootimg
 # below is only for usage...
@@ -594,20 +599,20 @@ def repack_bootimg(_base=None, _cmdline=None, _page_size=None, _padding_size=Non
     sys.stderr.write('output: boot-new.img\n')
 
     tmp = open('boot.img.tmp', 'wb')
-    options = { 'base': base,
-                'ramdisk_addr': ramdisk_addr,
-                'second_addr': second_addr,
-                'tags_addr': tags_addr,
-                'name': name,
-                'cmdline': cmdline,
-                'output': tmp,
-                'kernel': open(kernel, 'rb'),
-                'ramdisk': open(ramdisk, 'rb'),
-                'second': second and open(second, 'rb') or None,
-                'page_size': page_size,
-                'padding_size': padding_size,
-                'dt_image': dt_image and open(dt_image, 'rb') or None,
-                }
+    options = {'base': base,
+               'ramdisk_addr': ramdisk_addr,
+               'second_addr': second_addr,
+               'tags_addr': tags_addr,
+               'name': name,
+               'cmdline': cmdline,
+               'output': tmp,
+               'kernel': open(kernel, 'rb'),
+               'ramdisk': open(ramdisk, 'rb'),
+               'second': second and open(second, 'rb') or None,
+               'page_size': page_size,
+               'padding_size': padding_size,
+               'dt_image': dt_image and open(dt_image, 'rb') or None,
+               }
 
     write_bootimg(**options)
     tmp.close()
@@ -636,7 +641,7 @@ def repack_bootimg(_base=None, _cmdline=None, _page_size=None, _padding_size=Non
     if os.path.exists('ramdisk.gz'):
         os.remove('ramdisk.gz')
     if os.path.exists('ramdisk.cpio.gz'):
-        os.remove('ramdisk.cpio.gz')   
+        os.remove('ramdisk.cpio.gz')
     if os.path.exists('kernel.gz'):
         os.remove('kernel.gz')
     if os.path.exists('kernel'):
@@ -648,8 +653,9 @@ def repack_bootimg(_base=None, _cmdline=None, _page_size=None, _padding_size=Non
     shutil.rmtree('initrd')
     os.rename('boot.img.tmp', 'boot-new.img')
 
+
 def unpack_bootimg(bootimg=None, ramdisk=None, directory=None):
-    #shutil.copy('boot.img', 'boot-old.img')
+    # shutil.copy('boot.img', 'boot-old.img')
     if bootimg is None:
         bootimg = 'boot.img'
         if os.path.exists('recovery.img') and not os.path.exists('boot.img'):
@@ -663,12 +669,12 @@ def unpack_bootimg(bootimg=None, ramdisk=None, directory=None):
 
 
 def check_mtk_head(imgfile, outinfofile):
-    #备份原地址
+    # 备份原地址
     offset = imgfile.tell()
 
-    #check for magic
+    # check for magic
     data = imgfile.read(0x4)
-    #assert len(data) == 0x4, 'bad imgfile'
+    # assert len(data) == 0x4, 'bad imgfile'
     if len(data) != 0x4:
         return False
     (tag,) = struct.unpack('<I', data)
@@ -691,7 +697,7 @@ def check_mtk_head(imgfile, outinfofile):
         imgfile.seek(0x200, 0)
         return True
     else:
-        #assert False, 'Unsupported mode.'
+        # assert False, 'Unsupported mode.'
         imgfile.seek(offset, 0)
         return False
 
@@ -733,8 +739,9 @@ def try_add_head(imgfile, outfile, imginfofile, mode=None, name=None):
         imginfofile.seek(off2, 0)
         return True
     else:
-        #assert False, 'Unsupported mode.'
+        # assert False, 'Unsupported mode.'
         return False
+
 
 def unpack_ramdisk(ramdisk=None, directory=None):
     if ramdisk is None:
@@ -792,10 +799,10 @@ def repack_ramdisk(cpiolist=None):
     tmp = open('ramdisk.cpio.gz.tmp', 'wb')
     out = open('ramdisk.cpio.gz', 'wb')
     cpiogz = tmp
-    
+
     info = open(cpiolist, 'r', encoding='utf8')
     compress_level = 6
-    
+
     off2 = info.tell()
     info.seek(0, 0)
     for line in info.readlines():
@@ -815,9 +822,9 @@ def repack_ramdisk(cpiolist=None):
         cpiogz = CPIOGZIP(None, 'wb', compress_level, tmp)
     sys.stderr.write('compress_level: %d\n' % compress_level)
     write_cpio(info, cpiogz)
-    #cpiogz.close()
+    # cpiogz.close()
     tmp.close()
-    #info.close()
+    # info.close()
 
     tmp = open('ramdisk.cpio.gz.tmp', 'rb')
     info = open(cpiolist, 'r')
@@ -837,6 +844,7 @@ def repack_ramdisk(cpiolist=None):
         os.rename('ramdisk.cpio.gz.tmp', 'ramdisk.cpio.gz')
     info.close()
 
+
 def showVersion():
     sys.stderr.write('bootimg:\n')
     sys.stderr.write('\tUpdate Date:20160601\n')
@@ -852,11 +860,12 @@ def printErr(s):
 if __name__ == '__main__':
 
     functions = {
-                 '--unpack-bootimg': unpack_bootimg,
-                 '--unpack-ramdisk': unpack_ramdisk,
-                 '--repack-ramdisk': repack_ramdisk,
-                 '--repack-bootimg': repack_bootimg
-                }
+        '--unpack-bootimg': unpack_bootimg,
+        '--unpack-ramdisk': unpack_ramdisk,
+        '--repack-ramdisk': repack_ramdisk,
+        '--repack-bootimg': repack_bootimg
+    }
+
 
     def usage():
         showVersion()
@@ -865,6 +874,7 @@ if __name__ == '__main__':
         sys.stderr.write('\n\t'.join(sorted(functions.keys())))
         sys.stderr.write('\n')
         raise SystemExit(1)
+
 
     if len(sys.argv) == 1:
         usage()

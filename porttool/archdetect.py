@@ -1,4 +1,6 @@
-import sys, platform
+import platform
+import sys
+
 
 def retTypeAndMachine():
     # Detect machine and ostype
@@ -7,8 +9,8 @@ def retTypeAndMachine():
         ostype = "windows"
     machine = platform.machine().lower()
     if machine == 'aarch64_be' \
-        or machine == 'armv8b' \
-        or machine == 'armv8l':
+            or machine == 'armv8b' \
+            or machine == 'armv8l':
         machine = 'aarch64'
     if machine == 'i386' or machine == 'i686':
         machine = 'x86'
@@ -19,10 +21,10 @@ def retTypeAndMachine():
             sys.stderr.write("Error : Program on windows only support 64bit machine\n")
             return None
     if ostype == 'linux':
-        if not (machine == 'aarch64' or \
-                machine == 'arm' or \
-                machine == 'x86' or \
+        if not (machine == 'aarch64' or
+                machine == 'arm' or
+                machine == 'x86' or
                 machine == 'x86_64'):
-            sys.stderr.write("Error : Machine not support your device [%s]\n" %machine)
+            sys.stderr.write("Error : Machine not support your device [%s]\n" % machine)
             return None
     return ostype.replace('windows', 'win'), machine

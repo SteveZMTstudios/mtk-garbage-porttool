@@ -10,13 +10,16 @@ import zipfile
 
 from .archdetect import retTypeAndMachine
 
+
 def getsha1(filename):
     with open(filename, 'rb') as f:
         return sha1(f.read()).hexdigest()
 
+
 def cp(src, dest):
     if isfile(src):
         copyfile(src, dest)
+
 
 def rm(*files):
     for i in files:
@@ -26,16 +29,19 @@ def rm(*files):
             if isfile(i):
                 unlink(i)
 
+
 def grep_prop(key, file) -> str:
     with open(file, 'r') as f:
         for i in iter(f.readline, ""):
             if key in i:
                 return i.split("=")[1].rstrip("\n")
 
-def parseMagiskApk(apk: str, arch:["arm64", "arm", "x86", "x86_64"]="arm64", log=stderr):
+
+def parseMagiskApk(apk: str, arch: ["arm64", "arm", "x86", "x86_64"] = "arm64", log=stderr):
     """
     This function will extract useful file from magisk.apk
     """
+
     def archconv(a):
         ret = a
         match a:
@@ -44,7 +50,7 @@ def parseMagiskApk(apk: str, arch:["arm64", "arm", "x86", "x86_64"]="arm64", log
             case "arm":
                 ret = "armeabi-v7a"
         return ret
-    
+
     def archto32(a):
         ret = a
         match a:
@@ -72,7 +78,7 @@ def parseMagiskApk(apk: str, arch:["arm64", "arm", "x86", "x86_64"]="arm64", log
             if "stub.apk" in l.filename:
                 saveto(z.read(l), "stub.apk")
             # Save a platform magiskboot into bin if linux
-            if os!='win' and osname !='nt':
+            if os != 'win' and osname != 'nt':
                 if f"lib/{pp}/libmagiskboot.so" in l.filename:
                     saveto(z.read(l), "bin/magiskboot")
                     chmod("bin/magiskboot", 0o755)
@@ -83,17 +89,18 @@ def parseMagiskApk(apk: str, arch:["arm64", "arm", "x86", "x86_64"]="arm64", log
                     saveto(z.read(f"lib/{arch}/libmagisk64.so"), "magisk64")
                 saveto(z.read(f"lib/{arch}/libmagiskinit.so"), "magiskinit")
 
+
 class BootPatcher(object):
     def __init__(
-        self,
-        magiskboot,
-        keep_verity: bool = True,
-        keep_forceencrypt: bool = True,
-        patchvbmeta_flag: bool = False,
-        recovery_mode: bool = False,
-        legacysar: bool = False,
-        progress=None,
-        log=stderr,
+            self,
+            magiskboot,
+            keep_verity: bool = True,
+            keep_forceencrypt: bool = True,
+            patchvbmeta_flag: bool = False,
+            recovery_mode: bool = False,
+            legacysar: bool = False,
+            progress=None,
+            log=stderr,
     ):
         self.magiskboot = magiskboot
 
@@ -125,10 +132,10 @@ class BootPatcher(object):
         }
 
         # This maybe no need
-        #for i in self.env:
+        # for i in self.env:
         #    putenv(i, self.env[i])
-    
-    def __execv(self, cmd:list):
+
+    def __execv(self, cmd: list):
         """
         Run magiskboot command, already include magiskboot
         return returncode and output
@@ -142,30 +149,31 @@ class BootPatcher(object):
             creationflags = subprocess.CREATE_NO_WINDOW
         else:
             creationflags = 0
-        logging.info("Run command : \n"+ " ".join(full))
+        logging.info("Run command : \n" + " ".join(full))
         ret = subprocess.run(full,
-                            stderr=subprocess.STDOUT,
-                            stdout=subprocess.PIPE,
-                            shell=False,
-                            env=self.env,
-                            creationflags=creationflags,
-                            )
+                             stderr=subprocess.STDOUT,
+                             stdout=subprocess.PIPE,
+                             shell=False,
+                             env=self.env,
+                             creationflags=creationflags,
+                             )
         logging.info(ret.stdout.decode())
         return ret.returncode, ret.stdout.decode()
-    
-    def patch(self, bootimg:str) -> bool:
+
+    def patch(self, bootimg: str) -> bool:
         # Check bootimg exist
         if not isfile(bootimg):
             print("- boot 镜像不存在", file=self.log)
             return False
-        
+
         # Unpack bootimg
         print("- 解包boot镜像...", file=self.log)
         err, ret = self.__execv(["unpack", bootimg])
         logging.info(ret)
 
         match err:
-            case 0: pass
+            case 0:
+                pass
             case 1:
                 print("! 不支持/未知 镜像格式", file=self.log)
                 return False
@@ -188,30 +196,30 @@ class BootPatcher(object):
 
         sha = ""
         match (status & 3):
-            case 0: # Stock boot
+            case 0:  # Stock boot
                 print("- 检测到原始未修改的boot镜像", file=self.log)
                 sha = getsha1(bootimg)
                 cp(bootimg, "stock_boot.img")
                 cp("ramdisk.cpio", "ramdisk.cpio.orig")
-            case 1: # Magisk patched
+            case 1:  # Magisk patched
                 print("- 检测到经过magisk修补过的boot镜像", file=self.log)
                 err, ret = self.__execv(["cpio", "ramdisk.cpio", "extract .backup/.magisk config.orig", "restore"])
                 cp("ramdisk.cpio", "ramdisk.cpio.orig")
                 rm("stock_boot.img")
-            case 2: # Unsupported
+            case 2:  # Unsupported
                 print("- boot镜像被未知的程序修改过", file=self.log)
                 print("- 请先将其还原之原始的boot镜像", file=self.log)
                 return False
-        
+
         # Sony device
         init = "init"
-        if not (status&4) == 0:
+        if not (status & 4) == 0:
             init = "init.real"
-        
+
         if isfile("config.orig"):
             sha = grep_prop("SHA1", "config.orig")
             rm("config.orig")
-        
+
         print("- 修补ramdisk", file=self.log)
 
         skip32 = "#"
@@ -223,11 +231,11 @@ class BootPatcher(object):
         if isfile("magisk32"):
             self.__execv(["compress=xz", "magisk32", "magisk32.xz"])
             skip32 = ""
-        
+
         stub = False
         if isfile("stub.apk"):
             stub = True
-        
+
         if stub:
             self.__execv(["compress=xz", "stub.apk", "stub.xz"])
         with open("config", 'w') as config:
@@ -237,7 +245,7 @@ class BootPatcher(object):
                 f"RECOVERYMODE={self.env['RECOVERYMODE']}" + "\n")
             if sha != "":
                 config.write(f"SHA1={sha}\n")
-        
+
         err, _ = self.__execv([
             "cpio", "ramdisk.cpio",
             f"add 0750 {init} magiskinit",
@@ -254,9 +262,9 @@ class BootPatcher(object):
         if err != 0:
             print("- 无法修补ramdisk", file=self.log)
             return False
-        
+
         rm("ramdisk.cpio.orig", "config", "magisk32.xz", "magisk64.xz", "stub.xz")
-        
+
         for dt in "dtb", "kernel_dtb", "extra":
             if isfile(dt):
                 err, _ = self.__execv([
@@ -271,7 +279,7 @@ class BootPatcher(object):
                 ])
                 if err == 0:
                     print(f"- 修补boot镜像中{dt}的fstab")
-        
+
         if isfile("kernel"):
             patchedkernel = False
             err, _ = self.__execv([
@@ -307,11 +315,12 @@ class BootPatcher(object):
 
     def cleanup(self):
         rmlist = [
-        "magisk32", "magisk32.xz", "magisk64", "magisk64.xz", "magiskinit", "stub.apk"
+            "magisk32", "magisk32.xz", "magisk64", "magisk64.xz", "magiskinit", "stub.apk"
         ]
         rm(*rmlist)
         print("- 清理文件", file=self.log)
         self.__execv(["cleanup"])
+
 
 if __name__ == "__main__":
     print(grep_prop("B", "config"))

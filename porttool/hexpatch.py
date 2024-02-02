@@ -2,8 +2,10 @@
 import mmap
 import binascii
 
+
 def hex2byte(hexstr):
     return binascii.unhexlify(hexstr)
+
 
 def hexpatch(file_path: str, from_: str, to: str) -> bool:
     patched = False
@@ -19,8 +21,8 @@ def hexpatch(file_path: str, from_: str, to: str) -> bool:
                 if curr == -1:
                     return patched
                 print(f"Patch @ {curr:08X} [{from_}] -> [{to}]")
-                m[curr:curr+len(pattern)] = b'\0' * len(pattern)
-                m[curr:curr+len(patch)] = patch
+                m[curr:curr + len(pattern)] = b'\0' * len(pattern)
+                m[curr:curr + len(patch)] = patch
                 patched = True
                 curr += len(patch)
 

@@ -7,14 +7,14 @@ import json
 # configs for porttool
 support_chipset_portstep = {
     'mt6572/mt6582/mt6592 kernel-3.4.67': {
-        'partitions': { # This is use for auto generage updater-script
+        'partitions': {  # This is use for auto generage updater-script
             'system': '/dev/block/mmcblk0p4',
             'boot': '/dev/block/bootimg',
         },
-        'flags': { # flag control in item
-            'generate_script': True, # Auto generate updater-script
+        'flags': {  # flag control in item
+            'generate_script': True,  # Auto generate updater-script
             # ========== split line ============ 
-            'replace_kernel': True, # startwith replace will replace file
+            'replace_kernel': True,  # startwith replace will replace file
             'replace_fstab': False,
             'selinux_permissive': True,
             'enable_adb': True,
@@ -36,11 +36,11 @@ support_chipset_portstep = {
             'change_locale': True,
             'use_custom_update-binary': True,
         },
-        'replace': { # if you flags startswith replace_ you must define which files need to be replace
-            'kernel': [ # boot from base -> port
+        'replace': {  # if you flags startswith replace_ you must define which files need to be replace
+            'kernel': [  # boot from base -> port
                 "kernel",
                 # commonly not compressed by gz at mt6572 etc
-                #"kernel.gz",
+                # "kernel.gz",
             ],
             'fstab': [  # boot from base -> port
                 "initrd/fstab",
@@ -48,8 +48,8 @@ support_chipset_portstep = {
                 "initrd/fstab.mt6582",
                 "initrd/fstab.mt6592",
             ],
-            'firmware': [ # below is system
-                "etc/firmware" # if is a directory, will remove first
+            'firmware': [  # below is system
+                "etc/firmware"  # if is a directory, will remove first
             ],
             'mddb': [
                 "etc/mddb"
@@ -99,7 +99,7 @@ support_chipset_portstep = {
             # keep empty and set generate_script: False
         },
         'flags': {
-            'generate_script': False, # do not generate updater-script on kernel only mode
+            'generate_script': False,  # do not generate updater-script on kernel only mode
             'replace_kernel': True,
             'selinux_permissive': True,
             'enable_adb': True,
@@ -107,12 +107,12 @@ support_chipset_portstep = {
             'replace_mddb': True,
         },
         'replace': {
-            'kernel': [ # boot from base -> port
+            'kernel': [  # boot from base -> port
                 "kernel",
-                "kernel.gz" # may be gz compressed
+                "kernel.gz"  # may be gz compressed
             ],
-            'firmware': [ # below is system
-                "etc/firmware" # if is a directory, will remove first
+            'firmware': [  # below is system
+                "etc/firmware"  # if is a directory, will remove first
             ],
             'mddb': [
                 "etc/mddb"
@@ -121,10 +121,10 @@ support_chipset_portstep = {
     },
     'G79 (mt6735/mt6735m/mt6737) kernel-3.18.19': {
         'partitions': {},
-        'flags': { # flag control in item
-            'generate_script': False, # Auto generate updater-script
+        'flags': {  # flag control in item
+            'generate_script': False,  # Auto generate updater-script
             # ========== split line ============ 
-            'replace_kernel': True, # startwith replace will replace file
+            'replace_kernel': True,  # startwith replace will replace file
             'replace_fstab': False,
             'selinux_permissive': True,
             'enable_adb': True,
@@ -145,19 +145,19 @@ support_chipset_portstep = {
             'change_locale': True,
             'use_custom_update-binary': True,
         },
-        'replace': { # if you flags startswith replace_ you must define which files need to be replace
-            'kernel': [ # boot from base -> port
+        'replace': {  # if you flags startswith replace_ you must define which files need to be replace
+            'kernel': [  # boot from base -> port
                 "kernel",
                 # commonly not compressed by gz at mt6572 etc
-                #"kernel.gz",
+                # "kernel.gz",
             ],
             'fstab': [  # boot from base -> port
                 "initrd/fstab",
                 "initrd/fstab.mt6735",
                 "initrd/fstab.mt6737",
             ],
-            'firmware': [ # below is system
-                "etc/firmware" # if is a directory, will remove first
+            'firmware': [  # below is system
+                "etc/firmware"  # if is a directory, will remove first
             ],
             'mddb': [
                 "etc/mddb"
@@ -223,7 +223,7 @@ ostype, arch = archdetect.retTypeAndMachine()
 ext_ext = '.exe' if ostype == 'win' else ''
 
 # binarys
-make_ext4fs_bin = op.join(getcwd(), "bin", ostype, arch, "make_ext4fs"+ext_ext)
-magiskboot_bin = op.join(getcwd(), "bin", ostype, arch, "magiskboot"+ext_ext)
-simg2img_bin = op.join(getcwd(), "bin", ostype, arch, "simg2img"+ext_ext)
-img2simg_bin = op.join(getcwd(), "bin", ostype, arch, "img2simg"+ext_ext)
+make_ext4fs_bin = op.join(getcwd(), "bin", ostype, arch, "make_ext4fs" + ext_ext)
+magiskboot_bin = op.join(getcwd(), "bin", ostype, arch, "magiskboot" + ext_ext)
+simg2img_bin = op.join(getcwd(), "bin", ostype, arch, "simg2img" + ext_ext)
+img2simg_bin = op.join(getcwd(), "bin", ostype, arch, "img2simg" + ext_ext)
