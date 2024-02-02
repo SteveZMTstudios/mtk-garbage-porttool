@@ -392,7 +392,7 @@ def write_cpio(cpiolist, output):
             output.write(padding(output.tell(), 512))
 
     files = []
-    functions = {'dir': cpio_mkdir,
+    functions_ = {'dir': cpio_mkdir,
                  'file': cpio_mkfile,
                  'slink': cpio_mkslink,
                  'nod': lambda *x: print("No Supported Yet"),
@@ -406,7 +406,7 @@ def write_cpio(cpiolist, output):
         lines = line.split('\t')
         if len(lines) < 1 or lines[0] == '#':
             continue
-        function = functions.get(lines[0])
+        function = functions_.get(lines[0])
         if not function:
             continue
         lines.pop(0)
