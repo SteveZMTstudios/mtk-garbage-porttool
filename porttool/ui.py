@@ -99,7 +99,6 @@ class MyUI(ttk.Labelframe):
         super().__init__(parent, text="MTK 低端机移植工具")
         self.chipset_select = StringVar(value='mt65')
         self.pack_type = StringVar(value='zip')
-        # self.log = LogLabel(self)
         self.item = []
         self.itembox = []  # save Checkbutton
 
@@ -134,7 +133,6 @@ class MyUI(ttk.Labelframe):
         # start to port
         p = portutils(
             newdict, *files, True if self.pack_type.get() == 'img' else False,
-            self.log
         ).start
         DummyProcess(target=p).start()
 
